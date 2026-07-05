@@ -14,11 +14,11 @@ class ImportView(QWidget):
         title.setStyleSheet("font-size: 18px; font-weight: bold;")
 
         description = QLabel(
-            "Permite crear una plantilla Excel e importar profesores, cursos, materias y aulas."
+            "Permite crear una plantilla Excel e importar profesores, cursos, materias, aulas, materias por curso y disponibilidad."
         )
         description.setWordWrap(True)
 
-        template_button = QPushButton("Crear plantilla Excel")
+        template_button = QPushButton("Crear plantilla Excel completa")
         template_button.clicked.connect(self.create_template)
 
         import_button = QPushButton("Importar datos desde Excel")
@@ -35,7 +35,7 @@ class ImportView(QWidget):
         path, _ = QFileDialog.getSaveFileName(
             self,
             "Guardar plantilla",
-            str(Path.home() / "plantilla_pini.xlsx"),
+            str(Path.home() / "plantilla_pini_completa.xlsx"),
             "Excel (*.xlsx)",
         )
         if path:
@@ -57,11 +57,13 @@ class ImportView(QWidget):
             f"Profesores creados: {result.created_teachers}\\n"
             f"Cursos creados: {result.created_courses}\\n"
             f"Materias creadas: {result.created_subjects}\\n"
-            f"Aulas creadas: {result.created_rooms}"
+            f"Aulas creadas: {result.created_rooms}\\n"
+            f"Materias por curso creadas: {result.created_course_subjects}\\n"
+            f"Disponibilidades actualizadas: {result.updated_availability}"
         )
 
         if result.errors:
-            message += "\\n\\nErrores:\\n" + "\\n".join(result.errors[:10])
+            message += "\\n\\nErrores:\\n" + "\\n".join(result.errors[:12])
             QMessageBox.warning(self, "Importación con avisos", message)
         else:
             QMessageBox.information(self, "Importación completada", message)
