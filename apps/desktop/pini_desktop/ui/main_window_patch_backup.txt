@@ -1,0 +1,14 @@
+Para enlazar automáticamente el nuevo módulo si tu main_window.py no lo muestra:
+
+1) Añade import:
+from pini_desktop.ui.views.backup_view import BackupView
+
+2) En Archivo:
+file_menu.addAction("Copias de seguridad", self._show_backup)
+
+3) Añade método:
+def _show_backup(self) -> None:
+    self._open_tab("Copias de seguridad", BackupView)
+
+4) En Inicio, puedes añadir botón:
+("Copias de seguridad", self._show_backup),
