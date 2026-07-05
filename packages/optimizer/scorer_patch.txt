@@ -1,0 +1,10 @@
+Integrar RoomMetricsAnalyzer en scorer.py
+
+room_score = media(room.score)
+
+Nueva ponderación:
+
+constraints 30%
+teacher 25%
+student 25%
+rooms 20%

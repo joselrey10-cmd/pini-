@@ -1,0 +1,7 @@
+Añadir al informe:
+
+rooms:
+- utilization
+- conflicts
+- unsuitable_assignments
+- score
