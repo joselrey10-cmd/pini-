@@ -1,0 +1,19 @@
+{
+  "profile": "CEIP Tierra de Pinares",
+  "rules": {
+    "C006": {
+      "general_max_consecutive": 1,
+      "exceptions": [
+        {
+          "subject": "Inglés",
+          "course_from": 4,
+          "course_to": 6,
+          "max_consecutive": 2
+        }
+      ]
+    },
+    "C006.1": {
+      "contexts_after_break": true
+    }
+  }
+}

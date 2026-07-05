@@ -1,0 +1,18 @@
+[project]
+name = "pini"
+version = "0.1.0"
+description = "Pini: planificación y generación de horarios escolares"
+requires-python = ">=3.11"
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0.0"]
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "packages/core",
+    "packages/rule_engine",
+    "packages/scheduler",
+    "packages/persistence"
+]
+testpaths = ["tests"]
