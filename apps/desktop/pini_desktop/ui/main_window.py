@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QSt
 
 from pini_desktop.ui.views.course_subjects_view import CourseSubjectsView
 from pini_desktop.ui.views.courses_view import CoursesView
+from pini_desktop.ui.views.project_validation_view import ProjectValidationView
 from pini_desktop.ui.views.rooms_view import RoomsView
 from pini_desktop.ui.views.subjects_view import SubjectsView
 from pini_desktop.ui.views.teacher_availability_view import TeacherAvailabilityView
@@ -44,8 +45,8 @@ class MainWindow(QMainWindow):
         data_menu.addAction("Materias por curso", self._show_course_subjects)
 
         schedule_menu = menu.addMenu("Horarios")
+        schedule_menu.addAction("Validar proyecto", self._show_project_validation)
         schedule_menu.addAction("Generar", self._not_implemented)
-        schedule_menu.addAction("Validar", self._not_implemented)
         schedule_menu.addAction("Optimizar", self._not_implemented)
 
         reports_menu = menu.addMenu("Informes")
@@ -86,6 +87,7 @@ class MainWindow(QMainWindow):
             ("Gestionar materias", self._show_subjects),
             ("Gestionar aulas", self._show_rooms),
             ("Asignar materias a cursos", self._show_course_subjects),
+            ("Validar proyecto", self._show_project_validation),
         ]
 
         layout.addWidget(title)
@@ -128,6 +130,9 @@ class MainWindow(QMainWindow):
 
     def _show_timetable_settings(self) -> None:
         self._open_tab("Horario general", TimetableSettingsView)
+
+    def _show_project_validation(self) -> None:
+        self._open_tab("Validación", ProjectValidationView)
 
     def _open_tab(self, title: str, view_class) -> None:
         index = self._find_tab(title)
