@@ -1,6 +1,6 @@
 DEFAULT_WEIGHTS = {
-    "constraints": 35,
-    "teacher_compactness": 35,
-    "distribution": 20,
+    "constraints": 30,
+    "teacher_compactness": 30,
+    "student_distribution": 30,
     "rooms": 10,
 }
