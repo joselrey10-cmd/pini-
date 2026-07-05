@@ -1,0 +1,15 @@
+IMPORTANTE:
+Añade estas líneas manualmente si tu main_window.py no queda actualizado al copiar:
+
+1) En imports:
+from pini_desktop.ui.views.dynamic_rules_view import DynamicRulesView
+
+2) En menú Centro:
+center_menu.addAction("Reglas del centro", self._show_dynamic_rules)
+
+3) Método:
+def _show_dynamic_rules(self) -> None:
+    self._open_tab("Reglas del centro", DynamicRulesView)
+
+4) Botón de inicio opcional:
+("Reglas del centro", self._show_dynamic_rules),
