@@ -1,15 +1,5 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import (
-    QLabel,
-    QMainWindow,
-    QMessageBox,
-    QPushButton,
-    QScrollArea,
-    QStatusBar,
-    QTabWidget,
-    QVBoxLayout,
-    QWidget,
-)
+from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QScrollArea, QStatusBar, QTabWidget, QVBoxLayout, QWidget
 
 from pini_desktop.ui.views.backup_view import BackupView
 from pini_desktop.ui.views.center_wizard_view import CenterWizardView
@@ -23,6 +13,7 @@ from pini_desktop.ui.views.rooms_view import RoomsView
 from pini_desktop.ui.views.schedule_matrix_view import CourseScheduleView, TeacherScheduleView
 from pini_desktop.ui.views.schedule_view import ScheduleView
 from pini_desktop.ui.views.school_template_view import SchoolTemplateView
+from pini_desktop.ui.views.self_check_view import SelfCheckView
 from pini_desktop.ui.views.subjects_view import SubjectsView
 from pini_desktop.ui.views.teacher_availability_view import TeacherAvailabilityView
 from pini_desktop.ui.views.teachers_view import TeachersView
@@ -34,11 +25,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Pini 0.1 - Planificador Inteligente")
         self.resize(1200, 760)
-
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self._close_tab)
-
         self._build_menu()
         self._build_central_widget()
         self._build_status_bar()
@@ -84,7 +73,11 @@ class MainWindow(QMainWindow):
         reports_menu.addSeparator()
         reports_menu.addAction("Exportar", self._show_export)
 
+        tools_menu = menu.addMenu("Herramientas")
+        tools_menu.addAction("Comprobar y reparar Pini", self._show_self_check)
+
         help_menu = menu.addMenu("Ayuda")
+        help_menu.addAction("Comprobar y reparar Pini", self._show_self_check)
         help_menu.addAction("Acerca de Pini", self._about)
 
     def _build_central_widget(self) -> None:
@@ -96,7 +89,6 @@ class MainWindow(QMainWindow):
         outer_layout = QVBoxLayout(outer)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
-
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
@@ -104,11 +96,9 @@ class MainWindow(QMainWindow):
         title = QLabel("PINI")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 42px; font-weight: bold; margin-top: 20px;")
-
         subtitle = QLabel("Planificador Inteligente de Horarios Escolares")
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setStyleSheet("font-size: 18px;")
-
         school = QLabel("CEIP Tierra de Pinares")
         school.setAlignment(Qt.AlignCenter)
         school.setStyleSheet("font-size: 16px; margin-bottom: 20px;")
@@ -142,8 +132,9 @@ class MainWindow(QMainWindow):
                 ("Ver horario por curso", self._show_course_schedule),
                 ("Ver horario por profesor", self._show_teacher_schedule),
             ]),
-            ("Informes", [
+            ("Informes y herramientas", [
                 ("Exportar horarios", self._show_export),
+                ("Comprobar y reparar Pini", self._show_self_check),
             ]),
         ]
 
@@ -152,7 +143,6 @@ class MainWindow(QMainWindow):
             label.setAlignment(Qt.AlignCenter)
             label.setStyleSheet("font-size: 18px; font-weight: bold; margin-top: 18px;")
             layout.addWidget(label)
-
             for text, handler in buttons:
                 button = QPushButton(text)
                 button.setMinimumWidth(320)
@@ -182,6 +172,9 @@ class MainWindow(QMainWindow):
 
     def _show_backup(self) -> None:
         self._open_tab("Copias de seguridad", BackupView)
+
+    def _show_self_check(self) -> None:
+        self._open_tab("Comprobación", SelfCheckView)
 
     def _show_timetable_settings(self) -> None:
         self._open_tab("Horario general", TimetableSettingsView)
@@ -242,15 +235,7 @@ class MainWindow(QMainWindow):
         self.tabs.removeTab(index)
 
     def _about(self) -> None:
-        QMessageBox.information(
-            self,
-            "Acerca de Pini",
-            "Pini 0.1\nPlanificador Inteligente de Horarios Escolares.",
-        )
+        QMessageBox.information(self, "Acerca de Pini", "Pini 0.1\\nPlanificador Inteligente de Horarios Escolares.")
 
     def _not_implemented(self) -> None:
-        QMessageBox.information(
-            self,
-            "Pini",
-            "Esta función se implementará en próximos commits.",
-        )
+        QMessageBox.information(self, "Pini", "Esta función se implementará en próximos commits.")
