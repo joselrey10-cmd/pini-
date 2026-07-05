@@ -27,6 +27,17 @@ CREATE TABLE IF NOT EXISTS courses(
     tutor_teacher_id INTEGER,
     FOREIGN KEY(tutor_teacher_id) REFERENCES teachers(id)
 );
+
+CREATE TABLE IF NOT EXISTS subjects(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    weekly_sessions INTEGER NOT NULL DEFAULT 1,
+    required_speciality TEXT,
+    room_type TEXT,
+    max_consecutive INTEGER NOT NULL DEFAULT 1,
+    allows_double_session INTEGER NOT NULL DEFAULT 0
+);
 '''
 
 def initialise_database() -> None:
