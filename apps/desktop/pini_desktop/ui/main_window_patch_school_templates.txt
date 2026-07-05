@@ -1,0 +1,15 @@
+Si quieres enlazar el Sprint 27 manualmente:
+
+1) Import:
+from pini_desktop.ui.views.school_template_view import SchoolTemplateView
+
+2) En Archivo o Centro:
+file_menu.addAction("Plantillas automáticas", self._show_school_templates)
+center_menu.addAction("Plantillas automáticas", self._show_school_templates)
+
+3) Método:
+def _show_school_templates(self) -> None:
+    self._open_tab("Plantillas", SchoolTemplateView)
+
+4) Botón en Inicio:
+("Plantillas automáticas", self._show_school_templates),
