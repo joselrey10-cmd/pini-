@@ -1,13 +1,11 @@
-from .scorer import Scorer
+from .optimizer import Optimizer
+
 
 class QualityReport:
     def build(self, solution):
-        s=Scorer().evaluate(solution)
+        evaluated = Optimizer(max_iterations=0).evaluate(solution)
         return {
-            "score": s.total,
-            "teacher_gaps": s.teacher_gaps,
-            "distribution": s.distribution,
-            "room_usage": s.room_usage,
-            "constraints": s.constraints,
-            "conflicts": list(getattr(solution,"conflicts",[])),
+            "score": evaluated.score,
+            "conflicts": list(evaluated.conflicts),
+            "sessions": len(evaluated.sessions),
         }
