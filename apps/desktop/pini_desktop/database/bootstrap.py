@@ -16,6 +16,17 @@ CREATE TABLE IF NOT EXISTS teachers(
     weekly_hours INTEGER NOT NULL DEFAULT 25,
     max_daily_sessions INTEGER NOT NULL DEFAULT 5
 );
+
+CREATE TABLE IF NOT EXISTS courses(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    stage TEXT NOT NULL,
+    level INTEGER NOT NULL,
+    group_name TEXT NOT NULL,
+    students INTEGER NOT NULL DEFAULT 25,
+    tutor_teacher_id INTEGER,
+    FOREIGN KEY(tutor_teacher_id) REFERENCES teachers(id)
+);
 '''
 
 def initialise_database() -> None:

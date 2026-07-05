@@ -1,6 +1,9 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTabWidget, QVBoxLayout, QWidget
+
+from pini_desktop.ui.views.courses_view import CoursesView
 from pini_desktop.ui.views.teachers_view import TeachersView
+
 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
@@ -28,7 +31,7 @@ class MainWindow(QMainWindow):
 
         data_menu = menu.addMenu("Datos")
         data_menu.addAction("Profesores", self._show_teachers)
-        data_menu.addAction("Cursos", self._not_implemented)
+        data_menu.addAction("Cursos", self._show_courses)
         data_menu.addAction("Materias", self._not_implemented)
         data_menu.addAction("Aulas", self._not_implemented)
 
@@ -54,22 +57,32 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setAlignment(Qt.AlignCenter)
+
         title = QLabel("PINI")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 42px; font-weight: bold;")
+
         subtitle = QLabel("Planificador Inteligente de Horarios Escolares")
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setStyleSheet("font-size: 18px;")
+
         school = QLabel("CEIP Tierra de Pinares")
         school.setAlignment(Qt.AlignCenter)
         school.setStyleSheet("font-size: 16px; margin-bottom: 24px;")
+
         teachers_button = QPushButton("Gestionar profesores")
         teachers_button.setMinimumWidth(260)
         teachers_button.clicked.connect(self._show_teachers)
+
+        courses_button = QPushButton("Gestionar cursos")
+        courses_button.setMinimumWidth(260)
+        courses_button.clicked.connect(self._show_courses)
+
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(school)
         layout.addWidget(teachers_button, alignment=Qt.AlignCenter)
+        layout.addWidget(courses_button, alignment=Qt.AlignCenter)
         return container
 
     def _build_status_bar(self) -> None:
@@ -81,12 +94,18 @@ class MainWindow(QMainWindow):
         self.tabs.setCurrentIndex(0)
 
     def _show_teachers(self) -> None:
-        index = self._find_tab("Profesores")
+        self._open_tab("Profesores", TeachersView)
+
+    def _show_courses(self) -> None:
+        self._open_tab("Cursos", CoursesView)
+
+    def _open_tab(self, title: str, view_class) -> None:
+        index = self._find_tab(title)
         if index == -1:
-            self.tabs.addTab(TeachersView(self), "Profesores")
+            self.tabs.addTab(view_class(self), title)
             index = self.tabs.count() - 1
         self.tabs.setCurrentIndex(index)
-        self.statusBar().showMessage("Gestión de profesores")
+        self.statusBar().showMessage(title)
 
     def _find_tab(self, title: str) -> int:
         for index in range(self.tabs.count()):
