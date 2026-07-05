@@ -1,0 +1,23 @@
+from pathlib import Path
+from pini_desktop.services.teacher_service import Teacher, TeacherService
+
+def test_teacher_crud(tmp_path: Path):
+    db = tmp_path / "test_pini.db"
+    service = TeacherService(database_path=db)
+
+    teacher_id = service.create_teacher(
+        Teacher(id=None, code="P01", name="Ana", surname="García", speciality="Primaria", weekly_hours=25, max_daily_sessions=5)
+    )
+
+    teachers = service.list_teachers()
+    assert len(teachers) == 1
+    assert teachers[0].id == teacher_id
+    assert teachers[0].code == "P01"
+
+    service.update_teacher(
+        Teacher(id=teacher_id, code="P01", name="Ana", surname="García López", speciality="Primaria", weekly_hours=24, max_daily_sessions=5)
+    )
+    assert service.list_teachers()[0].surname == "García López"
+
+    service.delete_teacher(teacher_id)
+    assert service.list_teachers() == []

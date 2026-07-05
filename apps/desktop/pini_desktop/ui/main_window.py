@@ -1,20 +1,21 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QStatusBar, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTabWidget, QVBoxLayout, QWidget
+from pini_desktop.ui.views.teachers_view import TeachersView
 
 class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Pini 0.1 - Planificador Inteligente")
         self.resize(1100, 720)
+        self.tabs = QTabWidget()
         self._build_menu()
         self._build_central_widget()
         self._build_status_bar()
 
     def _build_menu(self) -> None:
         menu = self.menuBar()
-
         file_menu = menu.addMenu("Archivo")
-        file_menu.addAction("Nuevo proyecto", self._not_implemented)
+        file_menu.addAction("Nuevo proyecto", self._show_home)
         file_menu.addAction("Abrir proyecto", self._not_implemented)
         file_menu.addAction("Guardar", self._not_implemented)
         file_menu.addSeparator()
@@ -26,7 +27,7 @@ class MainWindow(QMainWindow):
         center_menu.addAction("Horario general", self._not_implemented)
 
         data_menu = menu.addMenu("Datos")
-        data_menu.addAction("Profesores", self._not_implemented)
+        data_menu.addAction("Profesores", self._show_teachers)
         data_menu.addAction("Cursos", self._not_implemented)
         data_menu.addAction("Materias", self._not_implemented)
         data_menu.addAction("Aulas", self._not_implemented)
@@ -46,44 +47,55 @@ class MainWindow(QMainWindow):
         help_menu.addAction("Acerca de Pini", self._about)
 
     def _build_central_widget(self) -> None:
+        self.tabs.addTab(self._home_widget(), "Inicio")
+        self.setCentralWidget(self.tabs)
+
+    def _home_widget(self) -> QWidget:
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setAlignment(Qt.AlignCenter)
-
         title = QLabel("PINI")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 42px; font-weight: bold;")
-
         subtitle = QLabel("Planificador Inteligente de Horarios Escolares")
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setStyleSheet("font-size: 18px;")
-
         school = QLabel("CEIP Tierra de Pinares")
         school.setAlignment(Qt.AlignCenter)
         school.setStyleSheet("font-size: 16px; margin-bottom: 24px;")
-
-        new_project = QPushButton("Nuevo proyecto")
-        new_project.setMinimumWidth(260)
-        new_project.clicked.connect(self._not_implemented)
-
-        open_project = QPushButton("Abrir proyecto")
-        open_project.setMinimumWidth(260)
-        open_project.clicked.connect(self._not_implemented)
-
+        teachers_button = QPushButton("Gestionar profesores")
+        teachers_button.setMinimumWidth(260)
+        teachers_button.clicked.connect(self._show_teachers)
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(school)
-        layout.addWidget(new_project, alignment=Qt.AlignCenter)
-        layout.addWidget(open_project, alignment=Qt.AlignCenter)
-        self.setCentralWidget(container)
+        layout.addWidget(teachers_button, alignment=Qt.AlignCenter)
+        return container
 
     def _build_status_bar(self) -> None:
         status = QStatusBar()
         status.showMessage("Listo")
         self.setStatusBar(status)
 
+    def _show_home(self) -> None:
+        self.tabs.setCurrentIndex(0)
+
+    def _show_teachers(self) -> None:
+        index = self._find_tab("Profesores")
+        if index == -1:
+            self.tabs.addTab(TeachersView(self), "Profesores")
+            index = self.tabs.count() - 1
+        self.tabs.setCurrentIndex(index)
+        self.statusBar().showMessage("Gestión de profesores")
+
+    def _find_tab(self, title: str) -> int:
+        for index in range(self.tabs.count()):
+            if self.tabs.tabText(index) == title:
+                return index
+        return -1
+
     def _about(self) -> None:
-        QMessageBox.information(self, "Acerca de Pini", "Pini 0.1\nPlanificador Inteligente de Horarios Escolares.")
+        QMessageBox.information(self, "Acerca de Pini", "Pini 0.1\\nPlanificador Inteligente de Horarios Escolares.")
 
     def _not_implemented(self) -> None:
         QMessageBox.information(self, "Pini", "Esta función se implementará en los próximos commits.")

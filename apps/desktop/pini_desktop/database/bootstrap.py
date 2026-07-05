@@ -6,6 +6,16 @@ CREATE TABLE IF NOT EXISTS app_metadata(
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS teachers(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    surname TEXT NOT NULL,
+    speciality TEXT NOT NULL,
+    weekly_hours INTEGER NOT NULL DEFAULT 25,
+    max_daily_sessions INTEGER NOT NULL DEFAULT 5
+);
 '''
 
 def initialise_database() -> None:
