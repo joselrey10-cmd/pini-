@@ -2,6 +2,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTabWidget, QVBoxLayout, QWidget
 
 from pini_desktop.ui.views.courses_view import CoursesView
+from pini_desktop.ui.views.rooms_view import RoomsView
 from pini_desktop.ui.views.subjects_view import SubjectsView
 from pini_desktop.ui.views.teachers_view import TeachersView
 
@@ -34,7 +35,7 @@ class MainWindow(QMainWindow):
         data_menu.addAction("Profesores", self._show_teachers)
         data_menu.addAction("Cursos", self._show_courses)
         data_menu.addAction("Materias", self._show_subjects)
-        data_menu.addAction("Aulas", self._not_implemented)
+        data_menu.addAction("Aulas", self._show_rooms)
 
         schedule_menu = menu.addMenu("Horarios")
         schedule_menu.addAction("Generar", self._not_implemented)
@@ -83,12 +84,17 @@ class MainWindow(QMainWindow):
         subjects_button.setMinimumWidth(260)
         subjects_button.clicked.connect(self._show_subjects)
 
+        rooms_button = QPushButton("Gestionar aulas")
+        rooms_button.setMinimumWidth(260)
+        rooms_button.clicked.connect(self._show_rooms)
+
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(school)
         layout.addWidget(teachers_button, alignment=Qt.AlignCenter)
         layout.addWidget(courses_button, alignment=Qt.AlignCenter)
         layout.addWidget(subjects_button, alignment=Qt.AlignCenter)
+        layout.addWidget(rooms_button, alignment=Qt.AlignCenter)
         return container
 
     def _build_status_bar(self) -> None:
@@ -107,6 +113,9 @@ class MainWindow(QMainWindow):
 
     def _show_subjects(self) -> None:
         self._open_tab("Materias", SubjectsView)
+
+    def _show_rooms(self) -> None:
+        self._open_tab("Aulas", RoomsView)
 
     def _open_tab(self, title: str, view_class) -> None:
         index = self._find_tab(title)

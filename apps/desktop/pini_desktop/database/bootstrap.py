@@ -38,6 +38,17 @@ CREATE TABLE IF NOT EXISTS subjects(
     max_consecutive INTEGER NOT NULL DEFAULT 1,
     allows_double_session INTEGER NOT NULL DEFAULT 0
 );
+
+CREATE TABLE IF NOT EXISTS rooms(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    room_type TEXT NOT NULL,
+    capacity INTEGER NOT NULL DEFAULT 25,
+    building TEXT,
+    resources TEXT,
+    available INTEGER NOT NULL DEFAULT 1
+);
 '''
 
 def initialise_database() -> None:
