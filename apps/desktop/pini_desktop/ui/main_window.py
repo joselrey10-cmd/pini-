@@ -1,8 +1,19 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QStatusBar,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from pini_desktop.ui.views.course_subjects_view import CourseSubjectsView
 from pini_desktop.ui.views.courses_view import CoursesView
+from pini_desktop.ui.views.dynamic_rules_view import DynamicRulesView
 from pini_desktop.ui.views.export_view import ExportView
 from pini_desktop.ui.views.project_validation_view import ProjectValidationView
 from pini_desktop.ui.views.rooms_view import RoomsView
@@ -18,15 +29,21 @@ class MainWindow(QMainWindow):
     def __init__(self) -> None:
         super().__init__()
         self.setWindowTitle("Pini 0.1 - Planificador Inteligente")
-        self.resize(1100, 720)
+        self.resize(1200, 760)
+
         self.tabs = QTabWidget()
+        self.tabs.setTabsClosable(True)
+        self.tabs.tabCloseRequested.connect(self._close_tab)
+
         self._build_menu()
         self._build_central_widget()
         self._build_status_bar()
 
     def _build_menu(self) -> None:
         menu = self.menuBar()
+
         file_menu = menu.addMenu("Archivo")
+        file_menu.addAction("Inicio", self._show_home)
         file_menu.addAction("Nuevo proyecto", self._show_home)
         file_menu.addAction("Abrir proyecto", self._not_implemented)
         file_menu.addAction("Guardar", self._not_implemented)
@@ -37,6 +54,7 @@ class MainWindow(QMainWindow):
         center_menu.addAction("Configuración", self._not_implemented)
         center_menu.addAction("Calendario", self._not_implemented)
         center_menu.addAction("Horario general", self._show_timetable_settings)
+        center_menu.addAction("Reglas del centro", self._show_dynamic_rules)
 
         data_menu = menu.addMenu("Datos")
         data_menu.addAction("Profesores", self._show_teachers)
@@ -49,14 +67,14 @@ class MainWindow(QMainWindow):
 
         schedule_menu = menu.addMenu("Horarios")
         schedule_menu.addAction("Validar proyecto", self._show_project_validation)
-        schedule_menu.addAction("Generar", self._show_schedule)
+        schedule_menu.addAction("Generar horario", self._show_schedule)
         schedule_menu.addAction("Horario por curso", self._show_course_schedule)
         schedule_menu.addAction("Horario por profesor", self._show_teacher_schedule)
         schedule_menu.addAction("Optimizar", self._not_implemented)
 
         reports_menu = menu.addMenu("Informes")
-        reports_menu.addAction("Horario por profesor", self._show_teacher_schedule)
         reports_menu.addAction("Horario por curso", self._show_course_schedule)
+        reports_menu.addAction("Horario por profesor", self._show_teacher_schedule)
         reports_menu.addSeparator()
         reports_menu.addAction("Exportar", self._show_export)
 
@@ -68,41 +86,71 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.tabs)
 
     def _home_widget(self) -> QWidget:
+        outer = QWidget()
+        outer_layout = QVBoxLayout(outer)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+
         container = QWidget()
         layout = QVBoxLayout(container)
-        layout.setAlignment(Qt.AlignCenter)
+        layout.setAlignment(Qt.AlignTop | Qt.AlignHCenter)
+
         title = QLabel("PINI")
         title.setAlignment(Qt.AlignCenter)
-        title.setStyleSheet("font-size: 42px; font-weight: bold;")
+        title.setStyleSheet("font-size: 42px; font-weight: bold; margin-top: 20px;")
+
         subtitle = QLabel("Planificador Inteligente de Horarios Escolares")
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setStyleSheet("font-size: 18px;")
+
         school = QLabel("CEIP Tierra de Pinares")
         school.setAlignment(Qt.AlignCenter)
-        school.setStyleSheet("font-size: 16px; margin-bottom: 24px;")
-        buttons = [
-            ("Horario general del centro", self._show_timetable_settings),
-            ("Gestionar profesores", self._show_teachers),
-            ("Disponibilidad profesorado", self._show_teacher_availability),
-            ("Gestionar cursos", self._show_courses),
-            ("Gestionar materias", self._show_subjects),
-            ("Gestionar aulas", self._show_rooms),
-            ("Asignar materias a cursos", self._show_course_subjects),
-            ("Validar proyecto", self._show_project_validation),
-            ("Generar horario básico", self._show_schedule),
-            ("Ver horario por curso", self._show_course_schedule),
-            ("Ver horario por profesor", self._show_teacher_schedule),
-            ("Exportar horarios", self._show_export),
-        ]
+        school.setStyleSheet("font-size: 16px; margin-bottom: 20px;")
+
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(school)
-        for text, handler in buttons:
-            button = QPushButton(text)
-            button.setMinimumWidth(280)
-            button.clicked.connect(handler)
-            layout.addWidget(button, alignment=Qt.AlignCenter)
-        return container
+
+        sections = [
+            ("Centro", [
+                ("Horario general del centro", self._show_timetable_settings),
+                ("Reglas del centro", self._show_dynamic_rules),
+            ]),
+            ("Datos", [
+                ("Gestionar profesores", self._show_teachers),
+                ("Disponibilidad profesorado", self._show_teacher_availability),
+                ("Gestionar cursos", self._show_courses),
+                ("Gestionar materias", self._show_subjects),
+                ("Gestionar aulas", self._show_rooms),
+                ("Asignar materias a cursos", self._show_course_subjects),
+            ]),
+            ("Horarios", [
+                ("Validar proyecto", self._show_project_validation),
+                ("Generar horario básico", self._show_schedule),
+                ("Ver horario por curso", self._show_course_schedule),
+                ("Ver horario por profesor", self._show_teacher_schedule),
+            ]),
+            ("Informes", [
+                ("Exportar horarios", self._show_export),
+            ]),
+        ]
+
+        for section_title, buttons in sections:
+            label = QLabel(section_title)
+            label.setAlignment(Qt.AlignCenter)
+            label.setStyleSheet("font-size: 18px; font-weight: bold; margin-top: 18px;")
+            layout.addWidget(label)
+
+            for text, handler in buttons:
+                button = QPushButton(text)
+                button.setMinimumWidth(320)
+                button.clicked.connect(handler)
+                layout.addWidget(button, alignment=Qt.AlignCenter)
+
+        scroll.setWidget(container)
+        outer_layout.addWidget(scroll)
+        return outer
 
     def _build_status_bar(self) -> None:
         status = QStatusBar()
@@ -111,6 +159,12 @@ class MainWindow(QMainWindow):
 
     def _show_home(self) -> None:
         self.tabs.setCurrentIndex(0)
+
+    def _show_timetable_settings(self) -> None:
+        self._open_tab("Horario general", TimetableSettingsView)
+
+    def _show_dynamic_rules(self) -> None:
+        self._open_tab("Reglas del centro", DynamicRulesView)
 
     def _show_teachers(self) -> None:
         self._open_tab("Profesores", TeachersView)
@@ -129,9 +183,6 @@ class MainWindow(QMainWindow):
 
     def _show_course_subjects(self) -> None:
         self._open_tab("Materias por curso", CourseSubjectsView)
-
-    def _show_timetable_settings(self) -> None:
-        self._open_tab("Horario general", TimetableSettingsView)
 
     def _show_project_validation(self) -> None:
         self._open_tab("Validación", ProjectValidationView)
@@ -162,8 +213,21 @@ class MainWindow(QMainWindow):
                 return index
         return -1
 
+    def _close_tab(self, index: int) -> None:
+        if index == 0:
+            return
+        self.tabs.removeTab(index)
+
     def _about(self) -> None:
-        QMessageBox.information(self, "Acerca de Pini", "Pini 0.1\nPlanificador Inteligente de Horarios Escolares.")
+        QMessageBox.information(
+            self,
+            "Acerca de Pini",
+            "Pini 0.1\nPlanificador Inteligente de Horarios Escolares.",
+        )
 
     def _not_implemented(self) -> None:
-        QMessageBox.information(self, "Pini", "Esta función se implementará en los próximos commits.")
+        QMessageBox.information(
+            self,
+            "Pini",
+            "Esta función se implementará en próximos commits.",
+        )

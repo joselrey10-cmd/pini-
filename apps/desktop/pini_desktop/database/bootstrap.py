@@ -1,7 +1,7 @@
 import sqlite3
 from pini_desktop.config.settings import DATA_DIR, DATABASE_PATH
 
-SCHEMA = '''
+SCHEMA = """
 CREATE TABLE IF NOT EXISTS app_metadata(
     key TEXT PRIMARY KEY,
     value TEXT NOT NULL
@@ -105,7 +105,22 @@ CREATE TABLE IF NOT EXISTS schedule_sessions(
     FOREIGN KEY(teacher_id) REFERENCES teachers(id),
     FOREIGN KEY(room_id) REFERENCES rooms(id)
 );
-'''
+
+CREATE TABLE IF NOT EXISTS dynamic_rules(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code TEXT NOT NULL UNIQUE,
+    name TEXT NOT NULL,
+    scope TEXT NOT NULL,
+    rule_type TEXT NOT NULL,
+    priority TEXT NOT NULL,
+    target TEXT,
+    day INTEGER,
+    period INTEGER,
+    value TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
+    notes TEXT
+);
+"""
 
 def initialise_database() -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)

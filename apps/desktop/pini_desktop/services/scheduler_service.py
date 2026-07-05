@@ -6,6 +6,7 @@ from pini_desktop.database.bootstrap import initialise_database
 from pini_desktop.services.project_validation_service import ProjectValidationService, ValidationSeverity
 from pini_desktop.services.rule_runtime_service import RuleRuntimeService
 from pini_desktop.services.scheduler.basic_engine import BasicSchedulerEngine
+from pini_desktop.services.scheduler.ortools_engine import OrToolsSchedulerEngine
 from pini_desktop.services.scheduler.repository import SchedulerRepository
 
 
@@ -40,14 +41,23 @@ class SchedulerService:
         self.repository.clear_generated_schedule()
 
     def generate_basic_schedule(self) -> list[str]:
+        return self._generate("basic")
+
+    def generate_ortools_schedule(self) -> list[str]:
+        return self._generate("ortools")
+
+    def _generate(self, engine_name: str) -> list[str]:
         validator = ProjectValidationService(database_path=self.database_path)
-        issues = validator.validate()
-        blocking = [issue for issue in issues if issue.severity == ValidationSeverity.ERROR]
+        blocking = [i for i in validator.validate() if i.severity == ValidationSeverity.ERROR]
         if blocking:
-            return [f"{issue.code}: {issue.message}" for issue in blocking]
+            return [f"{i.code}: {i.message}" for i in blocking]
 
         self.repository.clear_generated_schedule()
-        engine = BasicSchedulerEngine(self.repository, self.rule_runtime)
+        engine = (
+            OrToolsSchedulerEngine(self.repository, self.rule_runtime)
+            if engine_name == "ortools"
+            else BasicSchedulerEngine(self.repository, self.rule_runtime)
+        )
         result = engine.generate()
         self.repository.save_placements(result.placements)
         return result.warnings
