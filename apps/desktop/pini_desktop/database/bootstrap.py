@@ -89,6 +89,22 @@ CREATE TABLE IF NOT EXISTS timetable_periods(
     is_after_break INTEGER NOT NULL DEFAULT 0,
     UNIQUE(day, period)
 );
+
+CREATE TABLE IF NOT EXISTS schedule_sessions(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER NOT NULL,
+    subject_id INTEGER NOT NULL,
+    teacher_id INTEGER,
+    room_id INTEGER,
+    day INTEGER NOT NULL,
+    period INTEGER NOT NULL,
+    locked INTEGER NOT NULL DEFAULT 0,
+    generated_by TEXT NOT NULL DEFAULT 'basic',
+    FOREIGN KEY(course_id) REFERENCES courses(id),
+    FOREIGN KEY(subject_id) REFERENCES subjects(id),
+    FOREIGN KEY(teacher_id) REFERENCES teachers(id),
+    FOREIGN KEY(room_id) REFERENCES rooms(id)
+);
 '''
 
 def initialise_database() -> None:
