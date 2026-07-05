@@ -63,6 +63,16 @@ CREATE TABLE IF NOT EXISTS course_subjects(
     FOREIGN KEY(subject_id) REFERENCES subjects(id),
     FOREIGN KEY(preferred_teacher_id) REFERENCES teachers(id)
 );
+
+CREATE TABLE IF NOT EXISTS teacher_availability(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    teacher_id INTEGER NOT NULL,
+    day INTEGER NOT NULL,
+    period INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'AVAILABLE',
+    UNIQUE(teacher_id, day, period),
+    FOREIGN KEY(teacher_id) REFERENCES teachers(id)
+);
 '''
 
 def initialise_database() -> None:

@@ -5,6 +5,7 @@ from pini_desktop.ui.views.course_subjects_view import CourseSubjectsView
 from pini_desktop.ui.views.courses_view import CoursesView
 from pini_desktop.ui.views.rooms_view import RoomsView
 from pini_desktop.ui.views.subjects_view import SubjectsView
+from pini_desktop.ui.views.teacher_availability_view import TeacherAvailabilityView
 from pini_desktop.ui.views.teachers_view import TeachersView
 
 
@@ -34,6 +35,7 @@ class MainWindow(QMainWindow):
 
         data_menu = menu.addMenu("Datos")
         data_menu.addAction("Profesores", self._show_teachers)
+        data_menu.addAction("Disponibilidad profesorado", self._show_teacher_availability)
         data_menu.addAction("Cursos", self._show_courses)
         data_menu.addAction("Materias", self._show_subjects)
         data_menu.addAction("Aulas", self._show_rooms)
@@ -75,34 +77,25 @@ class MainWindow(QMainWindow):
         school.setAlignment(Qt.AlignCenter)
         school.setStyleSheet("font-size: 16px; margin-bottom: 24px;")
 
-        teachers_button = QPushButton("Gestionar profesores")
-        teachers_button.setMinimumWidth(260)
-        teachers_button.clicked.connect(self._show_teachers)
-
-        courses_button = QPushButton("Gestionar cursos")
-        courses_button.setMinimumWidth(260)
-        courses_button.clicked.connect(self._show_courses)
-
-        subjects_button = QPushButton("Gestionar materias")
-        subjects_button.setMinimumWidth(260)
-        subjects_button.clicked.connect(self._show_subjects)
-
-        rooms_button = QPushButton("Gestionar aulas")
-        rooms_button.setMinimumWidth(260)
-        rooms_button.clicked.connect(self._show_rooms)
-
-        course_subjects_button = QPushButton("Asignar materias a cursos")
-        course_subjects_button.setMinimumWidth(260)
-        course_subjects_button.clicked.connect(self._show_course_subjects)
+        buttons = [
+            ("Gestionar profesores", self._show_teachers),
+            ("Disponibilidad profesorado", self._show_teacher_availability),
+            ("Gestionar cursos", self._show_courses),
+            ("Gestionar materias", self._show_subjects),
+            ("Gestionar aulas", self._show_rooms),
+            ("Asignar materias a cursos", self._show_course_subjects),
+        ]
 
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(school)
-        layout.addWidget(teachers_button, alignment=Qt.AlignCenter)
-        layout.addWidget(courses_button, alignment=Qt.AlignCenter)
-        layout.addWidget(subjects_button, alignment=Qt.AlignCenter)
-        layout.addWidget(rooms_button, alignment=Qt.AlignCenter)
-        layout.addWidget(course_subjects_button, alignment=Qt.AlignCenter)
+
+        for text, handler in buttons:
+            button = QPushButton(text)
+            button.setMinimumWidth(280)
+            button.clicked.connect(handler)
+            layout.addWidget(button, alignment=Qt.AlignCenter)
+
         return container
 
     def _build_status_bar(self) -> None:
@@ -115,6 +108,9 @@ class MainWindow(QMainWindow):
 
     def _show_teachers(self) -> None:
         self._open_tab("Profesores", TeachersView)
+
+    def _show_teacher_availability(self) -> None:
+        self._open_tab("Disponibilidad profesorado", TeacherAvailabilityView)
 
     def _show_courses(self) -> None:
         self._open_tab("Cursos", CoursesView)
