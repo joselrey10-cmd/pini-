@@ -1,6 +1,7 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QStatusBar, QTabWidget, QVBoxLayout, QWidget
 
+from pini_desktop.ui.views.course_subjects_view import CourseSubjectsView
 from pini_desktop.ui.views.courses_view import CoursesView
 from pini_desktop.ui.views.rooms_view import RoomsView
 from pini_desktop.ui.views.subjects_view import SubjectsView
@@ -36,6 +37,8 @@ class MainWindow(QMainWindow):
         data_menu.addAction("Cursos", self._show_courses)
         data_menu.addAction("Materias", self._show_subjects)
         data_menu.addAction("Aulas", self._show_rooms)
+        data_menu.addSeparator()
+        data_menu.addAction("Materias por curso", self._show_course_subjects)
 
         schedule_menu = menu.addMenu("Horarios")
         schedule_menu.addAction("Generar", self._not_implemented)
@@ -88,6 +91,10 @@ class MainWindow(QMainWindow):
         rooms_button.setMinimumWidth(260)
         rooms_button.clicked.connect(self._show_rooms)
 
+        course_subjects_button = QPushButton("Asignar materias a cursos")
+        course_subjects_button.setMinimumWidth(260)
+        course_subjects_button.clicked.connect(self._show_course_subjects)
+
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(school)
@@ -95,6 +102,7 @@ class MainWindow(QMainWindow):
         layout.addWidget(courses_button, alignment=Qt.AlignCenter)
         layout.addWidget(subjects_button, alignment=Qt.AlignCenter)
         layout.addWidget(rooms_button, alignment=Qt.AlignCenter)
+        layout.addWidget(course_subjects_button, alignment=Qt.AlignCenter)
         return container
 
     def _build_status_bar(self) -> None:
@@ -116,6 +124,9 @@ class MainWindow(QMainWindow):
 
     def _show_rooms(self) -> None:
         self._open_tab("Aulas", RoomsView)
+
+    def _show_course_subjects(self) -> None:
+        self._open_tab("Materias por curso", CourseSubjectsView)
 
     def _open_tab(self, title: str, view_class) -> None:
         index = self._find_tab(title)

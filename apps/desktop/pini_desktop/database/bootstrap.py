@@ -49,6 +49,20 @@ CREATE TABLE IF NOT EXISTS rooms(
     resources TEXT,
     available INTEGER NOT NULL DEFAULT 1
 );
+
+CREATE TABLE IF NOT EXISTS course_subjects(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    course_id INTEGER NOT NULL,
+    subject_id INTEGER NOT NULL,
+    weekly_sessions INTEGER NOT NULL DEFAULT 1,
+    preferred_teacher_id INTEGER,
+    required_room_type TEXT,
+    notes TEXT,
+    UNIQUE(course_id, subject_id),
+    FOREIGN KEY(course_id) REFERENCES courses(id),
+    FOREIGN KEY(subject_id) REFERENCES subjects(id),
+    FOREIGN KEY(preferred_teacher_id) REFERENCES teachers(id)
+);
 '''
 
 def initialise_database() -> None:
