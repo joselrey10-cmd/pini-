@@ -5,6 +5,8 @@ from pini_desktop.config.settings import DATABASE_PATH
 from pini_desktop.database.bootstrap import initialise_database
 from pini_desktop.services.project_validation_service import ProjectValidationService, ValidationSeverity
 from pini_desktop.services.rule_runtime_service import RuleRuntimeService
+from pini_desktop.services.scheduler.basic_engine import BasicSchedulerEngine
+from pini_desktop.services.scheduler.repository import SchedulerRepository
 
 
 @dataclass(frozen=True)
@@ -26,6 +28,7 @@ class SchedulerService:
     def __init__(self, database_path=DATABASE_PATH):
         self.database_path = database_path
         initialise_database()
+        self.repository = SchedulerRepository(database_path)
         self.rule_runtime = RuleRuntimeService(database_path)
 
     def _connect(self):
@@ -34,12 +37,7 @@ class SchedulerService:
         return connection
 
     def clear_generated_schedule(self) -> None:
-        connection = self._connect()
-        try:
-            connection.execute("DELETE FROM schedule_sessions WHERE locked = 0")
-            connection.commit()
-        finally:
-            connection.close()
+        self.repository.clear_generated_schedule()
 
     def generate_basic_schedule(self) -> list[str]:
         validator = ProjectValidationService(database_path=self.database_path)
@@ -48,129 +46,11 @@ class SchedulerService:
         if blocking:
             return [f"{issue.code}: {issue.message}" for issue in blocking]
 
-        self.clear_generated_schedule()
-        warnings: list[str] = []
-
-        connection = self._connect()
-        try:
-            periods = connection.execute(
-                """
-                SELECT day, period, is_after_break
-                FROM timetable_periods
-                ORDER BY day, period
-                """
-            ).fetchall()
-
-            assignments = connection.execute(
-                """
-                SELECT cs.course_id, cs.subject_id, cs.weekly_sessions,
-                       cs.preferred_teacher_id, cs.required_room_type,
-                       c.code AS course_code,
-                       s.name AS subject_name
-                FROM course_subjects cs
-                JOIN courses c ON c.id = cs.course_id
-                JOIN subjects s ON s.id = cs.subject_id
-                ORDER BY c.level, c.group_name, s.name
-                """
-            ).fetchall()
-
-            if not periods:
-                return ["No hay periodos generados. Ve a Centro > Horario general y genera los periodos."]
-
-            occupied_course: set[tuple[int, int, int]] = set()
-            occupied_teacher: set[tuple[int, int, int]] = set()
-            occupied_room: set[tuple[int, int, int]] = set()
-
-            for assignment in assignments:
-                sessions_needed = int(assignment["weekly_sessions"])
-                placed = 0
-
-                candidate_periods = sorted(
-                    periods,
-                    key=lambda row: self.rule_runtime.preferred_period_score(
-                        course_code=assignment["course_code"],
-                        subject_name=assignment["subject_name"],
-                        teacher_name=self._teacher_name(connection, assignment["preferred_teacher_id"]),
-                        room_type=assignment["required_room_type"] or "",
-                        day=int(row["day"]),
-                        period=int(row["period"]),
-                    ),
-                    reverse=True,
-                )
-
-                for period_row in candidate_periods:
-                    if placed >= sessions_needed:
-                        break
-
-                    day = int(period_row["day"])
-                    period = int(period_row["period"])
-                    is_after_break = bool(period_row["is_after_break"])
-                    course_id = int(assignment["course_id"])
-                    teacher_id = assignment["preferred_teacher_id"]
-                    teacher_name = self._teacher_name(connection, teacher_id)
-                    room_type = assignment["required_room_type"] or ""
-                    room_id = self._find_room(connection, room_type)
-
-                    decision = self.rule_runtime.is_period_allowed(
-                        course_code=assignment["course_code"],
-                        subject_name=assignment["subject_name"],
-                        teacher_name=teacher_name,
-                        room_type=room_type,
-                        day=day,
-                        period=period,
-                        is_after_break=is_after_break,
-                    )
-                    if not decision.allowed:
-                        continue
-
-                    room_decision = self.rule_runtime.is_room_allowed(
-                        subject_name=assignment["subject_name"],
-                        room_type=room_type,
-                    )
-                    if not room_decision.allowed:
-                        continue
-
-                    if (course_id, day, period) in occupied_course:
-                        continue
-                    if teacher_id is not None and (int(teacher_id), day, period) in occupied_teacher:
-                        continue
-                    if room_id is not None and (int(room_id), day, period) in occupied_room:
-                        continue
-                    if teacher_id is not None and self._teacher_forbidden(connection, int(teacher_id), day, period):
-                        continue
-
-                    connection.execute(
-                        """
-                        INSERT INTO schedule_sessions(course_id, subject_id, teacher_id, room_id, day, period, locked, generated_by)
-                        VALUES (?, ?, ?, ?, ?, ?, 0, 'rule-aware-basic')
-                        """,
-                        (
-                            course_id,
-                            int(assignment["subject_id"]),
-                            int(teacher_id) if teacher_id is not None else None,
-                            int(room_id) if room_id is not None else None,
-                            day,
-                            period,
-                        ),
-                    )
-
-                    occupied_course.add((course_id, day, period))
-                    if teacher_id is not None:
-                        occupied_teacher.add((int(teacher_id), day, period))
-                    if room_id is not None:
-                        occupied_room.add((int(room_id), day, period))
-
-                    placed += 1
-
-                if placed < sessions_needed:
-                    warnings.append(
-                        f"No se pudieron colocar todas las sesiones de {assignment['subject_name']} en {assignment['course_code']} ({placed}/{sessions_needed})."
-                    )
-
-            connection.commit()
-            return warnings
-        finally:
-            connection.close()
+        self.repository.clear_generated_schedule()
+        engine = BasicSchedulerEngine(self.repository, self.rule_runtime)
+        result = engine.generate()
+        self.repository.save_placements(result.placements)
+        return result.warnings
 
     def list_sessions(self) -> list[ScheduleSession]:
         connection = self._connect()
@@ -209,34 +89,3 @@ class SchedulerService:
             ]
         finally:
             connection.close()
-
-    def _find_room(self, connection, required_room_type: str | None):
-        if not required_room_type:
-            row = connection.execute(
-                "SELECT id FROM rooms WHERE available=1 ORDER BY id LIMIT 1"
-            ).fetchone()
-        else:
-            row = connection.execute(
-                "SELECT id FROM rooms WHERE available=1 AND room_type=? ORDER BY id LIMIT 1",
-                (required_room_type,),
-            ).fetchone()
-        return row["id"] if row else None
-
-    def _teacher_forbidden(self, connection, teacher_id: int, day: int, period: int) -> bool:
-        row = connection.execute(
-            """
-            SELECT status FROM teacher_availability
-            WHERE teacher_id=? AND day=? AND period=?
-            """,
-            (teacher_id, day, period),
-        ).fetchone()
-        return bool(row and row["status"] == "FORBIDDEN")
-
-    def _teacher_name(self, connection, teacher_id) -> str:
-        if teacher_id is None:
-            return ""
-        row = connection.execute(
-            "SELECT name, surname FROM teachers WHERE id=?",
-            (teacher_id,),
-        ).fetchone()
-        return f"{row['name']} {row['surname']}" if row else ""
