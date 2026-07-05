@@ -73,6 +73,22 @@ CREATE TABLE IF NOT EXISTS teacher_availability(
     UNIQUE(teacher_id, day, period),
     FOREIGN KEY(teacher_id) REFERENCES teachers(id)
 );
+
+CREATE TABLE IF NOT EXISTS timetable_settings(
+    key TEXT PRIMARY KEY,
+    value TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS timetable_periods(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    day INTEGER NOT NULL,
+    period INTEGER NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time TEXT NOT NULL,
+    is_break_after INTEGER NOT NULL DEFAULT 0,
+    is_after_break INTEGER NOT NULL DEFAULT 0,
+    UNIQUE(day, period)
+);
 '''
 
 def initialise_database() -> None:

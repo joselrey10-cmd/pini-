@@ -7,6 +7,7 @@ from pini_desktop.ui.views.rooms_view import RoomsView
 from pini_desktop.ui.views.subjects_view import SubjectsView
 from pini_desktop.ui.views.teacher_availability_view import TeacherAvailabilityView
 from pini_desktop.ui.views.teachers_view import TeachersView
+from pini_desktop.ui.views.timetable_settings_view import TimetableSettingsView
 
 
 class MainWindow(QMainWindow):
@@ -31,7 +32,7 @@ class MainWindow(QMainWindow):
         center_menu = menu.addMenu("Centro")
         center_menu.addAction("Configuración", self._not_implemented)
         center_menu.addAction("Calendario", self._not_implemented)
-        center_menu.addAction("Horario general", self._not_implemented)
+        center_menu.addAction("Horario general", self._show_timetable_settings)
 
         data_menu = menu.addMenu("Datos")
         data_menu.addAction("Profesores", self._show_teachers)
@@ -78,6 +79,7 @@ class MainWindow(QMainWindow):
         school.setStyleSheet("font-size: 16px; margin-bottom: 24px;")
 
         buttons = [
+            ("Horario general del centro", self._show_timetable_settings),
             ("Gestionar profesores", self._show_teachers),
             ("Disponibilidad profesorado", self._show_teacher_availability),
             ("Gestionar cursos", self._show_courses),
@@ -123,6 +125,9 @@ class MainWindow(QMainWindow):
 
     def _show_course_subjects(self) -> None:
         self._open_tab("Materias por curso", CourseSubjectsView)
+
+    def _show_timetable_settings(self) -> None:
+        self._open_tab("Horario general", TimetableSettingsView)
 
     def _open_tab(self, title: str, view_class) -> None:
         index = self._find_tab(title)
