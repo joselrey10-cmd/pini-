@@ -1,5 +1,15 @@
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QScrollArea, QStatusBar, QTabWidget, QVBoxLayout, QWidget
+from PySide6.QtWidgets import (
+    QLabel,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QScrollArea,
+    QStatusBar,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 from pini_desktop.ui.views.backup_view import BackupView
 from pini_desktop.ui.views.center_wizard_view import CenterWizardView
@@ -12,6 +22,7 @@ from pini_desktop.ui.views.project_validation_view import ProjectValidationView
 from pini_desktop.ui.views.rooms_view import RoomsView
 from pini_desktop.ui.views.schedule_matrix_view import CourseScheduleView, TeacherScheduleView
 from pini_desktop.ui.views.schedule_view import ScheduleView
+from pini_desktop.ui.views.school_template_view import SchoolTemplateView
 from pini_desktop.ui.views.subjects_view import SubjectsView
 from pini_desktop.ui.views.teacher_availability_view import TeacherAvailabilityView
 from pini_desktop.ui.views.teachers_view import TeachersView
@@ -23,9 +34,11 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.setWindowTitle("Pini 0.1 - Planificador Inteligente")
         self.resize(1200, 760)
+
         self.tabs = QTabWidget()
         self.tabs.setTabsClosable(True)
         self.tabs.tabCloseRequested.connect(self._close_tab)
+
         self._build_menu()
         self._build_central_widget()
         self._build_status_bar()
@@ -36,6 +49,7 @@ class MainWindow(QMainWindow):
         file_menu = menu.addMenu("Archivo")
         file_menu.addAction("Inicio", self._show_home)
         file_menu.addAction("Asistente de configuración", self._show_center_wizard)
+        file_menu.addAction("Plantillas automáticas", self._show_school_templates)
         file_menu.addAction("Importar desde Excel", self._show_import)
         file_menu.addAction("Copias de seguridad", self._show_backup)
         file_menu.addSeparator()
@@ -43,6 +57,7 @@ class MainWindow(QMainWindow):
 
         center_menu = menu.addMenu("Centro")
         center_menu.addAction("Asistente de configuración", self._show_center_wizard)
+        center_menu.addAction("Plantillas automáticas", self._show_school_templates)
         center_menu.addAction("Horario general", self._show_timetable_settings)
         center_menu.addAction("Reglas del centro", self._show_dynamic_rules)
 
@@ -61,6 +76,7 @@ class MainWindow(QMainWindow):
         schedule_menu.addAction("Generar horario", self._show_schedule)
         schedule_menu.addAction("Horario por curso", self._show_course_schedule)
         schedule_menu.addAction("Horario por profesor", self._show_teacher_schedule)
+        schedule_menu.addAction("Optimizar", self._not_implemented)
 
         reports_menu = menu.addMenu("Informes")
         reports_menu.addAction("Horario por curso", self._show_course_schedule)
@@ -88,9 +104,11 @@ class MainWindow(QMainWindow):
         title = QLabel("PINI")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 42px; font-weight: bold; margin-top: 20px;")
+
         subtitle = QLabel("Planificador Inteligente de Horarios Escolares")
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setStyleSheet("font-size: 18px;")
+
         school = QLabel("CEIP Tierra de Pinares")
         school.setAlignment(Qt.AlignCenter)
         school.setStyleSheet("font-size: 16px; margin-bottom: 20px;")
@@ -102,6 +120,7 @@ class MainWindow(QMainWindow):
         sections = [
             ("Inicio del proyecto", [
                 ("Asistente de configuración", self._show_center_wizard),
+                ("Plantillas automáticas", self._show_school_templates),
                 ("Importar desde Excel", self._show_import),
                 ("Copias de seguridad", self._show_backup),
             ]),
@@ -123,7 +142,9 @@ class MainWindow(QMainWindow):
                 ("Ver horario por curso", self._show_course_schedule),
                 ("Ver horario por profesor", self._show_teacher_schedule),
             ]),
-            ("Informes", [("Exportar horarios", self._show_export)]),
+            ("Informes", [
+                ("Exportar horarios", self._show_export),
+            ]),
         ]
 
         for section_title, buttons in sections:
@@ -131,6 +152,7 @@ class MainWindow(QMainWindow):
             label.setAlignment(Qt.AlignCenter)
             label.setStyleSheet("font-size: 18px; font-weight: bold; margin-top: 18px;")
             layout.addWidget(label)
+
             for text, handler in buttons:
                 button = QPushButton(text)
                 button.setMinimumWidth(320)
@@ -151,6 +173,9 @@ class MainWindow(QMainWindow):
 
     def _show_center_wizard(self) -> None:
         self._open_tab("Asistente", CenterWizardView)
+
+    def _show_school_templates(self) -> None:
+        self._open_tab("Plantillas", SchoolTemplateView)
 
     def _show_import(self) -> None:
         self._open_tab("Importar", ImportView)
@@ -217,4 +242,15 @@ class MainWindow(QMainWindow):
         self.tabs.removeTab(index)
 
     def _about(self) -> None:
-        QMessageBox.information(self, "Acerca de Pini", "Pini 0.1\\nPlanificador Inteligente de Horarios Escolares.")
+        QMessageBox.information(
+            self,
+            "Acerca de Pini",
+            "Pini 0.1\nPlanificador Inteligente de Horarios Escolares.",
+        )
+
+    def _not_implemented(self) -> None:
+        QMessageBox.information(
+            self,
+            "Pini",
+            "Esta función se implementará en próximos commits.",
+        )
