@@ -1,6 +1,6 @@
-DEFAULT_WEIGHTS={
- 'teacher_gaps':35,
- 'distribution':25,
- 'rooms':15,
- 'constraints':25,
+DEFAULT_WEIGHTS = {
+    "constraints": 35,
+    "teacher_compactness": 35,
+    "distribution": 20,
+    "rooms": 10,
 }
