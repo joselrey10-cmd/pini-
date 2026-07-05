@@ -14,7 +14,7 @@ class ImportView(QWidget):
         title.setStyleSheet("font-size: 18px; font-weight: bold;")
 
         description = QLabel(
-            "Permite crear una plantilla Excel e importar profesores, cursos, materias, aulas, materias por curso y disponibilidad."
+            "Permite crear una plantilla Excel e importar profesores, cursos, materias, aulas, materias por curso, disponibilidad y reglas dinámicas."
         )
         description.setWordWrap(True)
 
@@ -59,7 +59,8 @@ class ImportView(QWidget):
             f"Materias creadas: {result.created_subjects}\\n"
             f"Aulas creadas: {result.created_rooms}\\n"
             f"Materias por curso creadas: {result.created_course_subjects}\\n"
-            f"Disponibilidades actualizadas: {result.updated_availability}"
+            f"Disponibilidades actualizadas: {result.updated_availability}\\n"
+            f"Reglas creadas: {result.created_dynamic_rules}"
         )
 
         if result.errors:

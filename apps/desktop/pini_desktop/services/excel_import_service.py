@@ -6,6 +6,7 @@ from openpyxl import Workbook, load_workbook
 from pini_desktop.services.availability_service import AvailabilityService, AvailabilityStatus
 from pini_desktop.services.course_service import Course, CourseService
 from pini_desktop.services.course_subject_service import CourseSubject, CourseSubjectService
+from pini_desktop.services.dynamic_rule_service import DynamicRule, DynamicRuleService
 from pini_desktop.services.room_service import Room, RoomService
 from pini_desktop.services.subject_service import Subject, SubjectService
 from pini_desktop.services.teacher_service import Teacher, TeacherService
@@ -19,6 +20,7 @@ class ImportResult:
     created_rooms: int = 0
     created_course_subjects: int = 0
     updated_availability: int = 0
+    created_dynamic_rules: int = 0
     errors: tuple[str, ...] = ()
 
     @property
@@ -33,6 +35,7 @@ class ExcelImportService:
     ROOMS_SHEET = "Aulas"
     COURSE_SUBJECTS_SHEET = "MateriasCurso"
     AVAILABILITY_SHEET = "Disponibilidad"
+    DYNAMIC_RULES_SHEET = "Reglas"
 
     def __init__(self, database_path=None):
         self.teacher_service = TeacherService(database_path) if database_path else TeacherService()
@@ -41,6 +44,7 @@ class ExcelImportService:
         self.room_service = RoomService(database_path) if database_path else RoomService()
         self.course_subject_service = CourseSubjectService(database_path) if database_path else CourseSubjectService()
         self.availability_service = AvailabilityService(database_path) if database_path else AvailabilityService()
+        self.dynamic_rule_service = DynamicRuleService(database_path) if database_path else DynamicRuleService()
 
     def create_template(self, path: str | Path) -> Path:
         path = Path(path)
@@ -77,6 +81,12 @@ class ExcelImportService:
         ws.append(["P01", 1, 1, "AVAILABLE"])
         ws.append(["P01", 1, 6, "FORBIDDEN"])
 
+        ws = wb.create_sheet(self.DYNAMIC_RULES_SHEET)
+        ws.append(["codigo", "nombre", "ambito", "tipo", "prioridad", "afecta_a", "dia", "periodo", "valor", "activa", "notas"])
+        ws.append(["R001", "Máximo general 1 consecutiva", "Materia", "Máximo consecutivas", "Obligatoria", "Todas", "", "", "1", "Sí", "Regla general del centro"])
+        ws.append(["R002", "Inglés 4º-6º permite 2 consecutivas", "Materia", "Máximo consecutivas", "Obligatoria", "Inglés 4º-6º", "", "", "2", "Sí", "Excepción"])
+        ws.append(["R003", "Contextos después del recreo", "Materia", "Después del recreo", "Obligatoria", "Contextos", "", "", "Sí", "Sí", "Regla del centro"])
+
         wb.save(path)
         return path
 
@@ -90,6 +100,7 @@ class ExcelImportService:
             "rooms": 0,
             "course_subjects": 0,
             "availability": 0,
+            "dynamic_rules": 0,
         }
 
         steps = [
@@ -99,6 +110,7 @@ class ExcelImportService:
             (self.ROOMS_SHEET, self._import_rooms, "rooms"),
             (self.COURSE_SUBJECTS_SHEET, self._import_course_subjects, "course_subjects"),
             (self.AVAILABILITY_SHEET, self._import_availability, "availability"),
+            (self.DYNAMIC_RULES_SHEET, self._import_dynamic_rules, "dynamic_rules"),
         ]
 
         for sheet_name, importer, key in steps:
@@ -114,6 +126,7 @@ class ExcelImportService:
             created_rooms=counters["rooms"],
             created_course_subjects=counters["course_subjects"],
             updated_availability=counters["availability"],
+            created_dynamic_rules=counters["dynamic_rules"],
             errors=tuple(errors),
         )
 
@@ -223,15 +236,7 @@ class ExcelImportService:
                     continue
 
                 self.course_subject_service.create_assignment(
-                    CourseSubject(
-                        id=None,
-                        course_id=course.id,
-                        subject_id=subject.id,
-                        weekly_sessions=int(row.get("sesiones_semanales") or subject.weekly_sessions),
-                        preferred_teacher_id=teacher.id if teacher else None,
-                        required_room_type=str(row.get("tipo_aula") or subject.room_type or "").strip(),
-                        notes=str(row.get("notas") or "").strip(),
-                    )
+                    CourseSubject(None, course.id, subject.id, int(row.get("sesiones_semanales") or subject.weekly_sessions), teacher.id if teacher else None, str(row.get("tipo_aula") or subject.room_type or "").strip(), str(row.get("notas") or "").strip())
                 )
                 created += 1
             except Exception as exc:
@@ -248,20 +253,47 @@ class ExcelImportService:
                 if not teacher:
                     errors.append(f"Disponibilidad fila {row_index}: profesor no encontrado: {teacher_code}")
                     continue
-
-                status = str(row.get("estado") or "AVAILABLE").strip().upper()
-                status = self._normalise_status(status)
-
                 self.availability_service.set_status(
                     teacher.id,
                     int(row.get("dia") or 1),
                     int(row.get("periodo") or 1),
-                    status,
+                    self._normalise_status(str(row.get("estado") or "AVAILABLE").strip().upper()),
                 )
                 updated += 1
             except Exception as exc:
                 errors.append(f"Disponibilidad fila {row_index}: {exc}")
         return updated, errors
+
+    def _import_dynamic_rules(self, worksheet):
+        created, errors = 0, []
+        existing = {rule.code for rule in self.dynamic_rule_service.list_rules()}
+
+        for row_index, row in self._rows(worksheet):
+            try:
+                code = str(row.get("codigo") or "").strip().upper()
+                if not code or code in existing:
+                    continue
+                self.dynamic_rule_service.create_rule(
+                    DynamicRule(
+                        id=None,
+                        code=code,
+                        name=str(row.get("nombre") or "").strip(),
+                        scope=str(row.get("ambito") or "Centro").strip(),
+                        rule_type=str(row.get("tipo") or "Nota personalizada").strip(),
+                        priority=str(row.get("prioridad") or "Preferente").strip(),
+                        target=str(row.get("afecta_a") or "").strip(),
+                        day=self._optional_int(row.get("dia")),
+                        period=self._optional_int(row.get("periodo")),
+                        value=str(row.get("valor") or "").strip(),
+                        active=self._bool(row.get("activa"), default=True),
+                        notes=str(row.get("notas") or "").strip(),
+                    )
+                )
+                existing.add(code)
+                created += 1
+            except Exception as exc:
+                errors.append(f"Reglas fila {row_index}: {exc}")
+        return created, errors
 
     def _normalise_status(self, status: str) -> AvailabilityStatus:
         mapping = {
@@ -277,6 +309,11 @@ class ExcelImportService:
         return mapping.get(status, AvailabilityStatus.AVAILABLE)
 
     def _bool(self, value, default=False) -> bool:
-        if value is None:
+        if value is None or str(value).strip() == "":
             return default
         return str(value).strip().casefold() in {"si", "sí", "yes", "true", "1"}
+
+    def _optional_int(self, value):
+        if value is None or str(value).strip() == "":
+            return None
+        return int(value)
