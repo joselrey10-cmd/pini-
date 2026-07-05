@@ -3,6 +3,7 @@ from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QSt
 
 from pini_desktop.ui.views.course_subjects_view import CourseSubjectsView
 from pini_desktop.ui.views.courses_view import CoursesView
+from pini_desktop.ui.views.export_view import ExportView
 from pini_desktop.ui.views.project_validation_view import ProjectValidationView
 from pini_desktop.ui.views.rooms_view import RoomsView
 from pini_desktop.ui.views.schedule_matrix_view import CourseScheduleView, TeacherScheduleView
@@ -56,8 +57,9 @@ class MainWindow(QMainWindow):
         reports_menu = menu.addMenu("Informes")
         reports_menu.addAction("Horario por profesor", self._show_teacher_schedule)
         reports_menu.addAction("Horario por curso", self._show_course_schedule)
+        reports_menu.addSeparator()
+        reports_menu.addAction("Exportar Excel", self._show_export)
         reports_menu.addAction("Exportar PDF", self._not_implemented)
-        reports_menu.addAction("Exportar Excel", self._not_implemented)
 
         help_menu = menu.addMenu("Ayuda")
         help_menu.addAction("Acerca de Pini", self._about)
@@ -95,18 +97,17 @@ class MainWindow(QMainWindow):
             ("Generar horario básico", self._show_schedule),
             ("Ver horario por curso", self._show_course_schedule),
             ("Ver horario por profesor", self._show_teacher_schedule),
+            ("Exportar a Excel", self._show_export),
         ]
 
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(school)
-
         for text, handler in buttons:
             button = QPushButton(text)
             button.setMinimumWidth(280)
             button.clicked.connect(handler)
             layout.addWidget(button, alignment=Qt.AlignCenter)
-
         return container
 
     def _build_status_bar(self) -> None:
@@ -149,6 +150,9 @@ class MainWindow(QMainWindow):
 
     def _show_teacher_schedule(self) -> None:
         self._open_tab("Horario por profesor", TeacherScheduleView)
+
+    def _show_export(self) -> None:
+        self._open_tab("Exportar", ExportView)
 
     def _open_tab(self, title: str, view_class) -> None:
         index = self._find_tab(title)
