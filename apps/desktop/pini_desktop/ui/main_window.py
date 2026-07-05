@@ -58,8 +58,7 @@ class MainWindow(QMainWindow):
         reports_menu.addAction("Horario por profesor", self._show_teacher_schedule)
         reports_menu.addAction("Horario por curso", self._show_course_schedule)
         reports_menu.addSeparator()
-        reports_menu.addAction("Exportar Excel", self._show_export)
-        reports_menu.addAction("Exportar PDF", self._not_implemented)
+        reports_menu.addAction("Exportar", self._show_export)
 
         help_menu = menu.addMenu("Ayuda")
         help_menu.addAction("Acerca de Pini", self._about)
@@ -72,19 +71,15 @@ class MainWindow(QMainWindow):
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setAlignment(Qt.AlignCenter)
-
         title = QLabel("PINI")
         title.setAlignment(Qt.AlignCenter)
         title.setStyleSheet("font-size: 42px; font-weight: bold;")
-
         subtitle = QLabel("Planificador Inteligente de Horarios Escolares")
         subtitle.setAlignment(Qt.AlignCenter)
         subtitle.setStyleSheet("font-size: 18px;")
-
         school = QLabel("CEIP Tierra de Pinares")
         school.setAlignment(Qt.AlignCenter)
         school.setStyleSheet("font-size: 16px; margin-bottom: 24px;")
-
         buttons = [
             ("Horario general del centro", self._show_timetable_settings),
             ("Gestionar profesores", self._show_teachers),
@@ -97,9 +92,8 @@ class MainWindow(QMainWindow):
             ("Generar horario básico", self._show_schedule),
             ("Ver horario por curso", self._show_course_schedule),
             ("Ver horario por profesor", self._show_teacher_schedule),
-            ("Exportar a Excel", self._show_export),
+            ("Exportar horarios", self._show_export),
         ]
-
         layout.addWidget(title)
         layout.addWidget(subtitle)
         layout.addWidget(school)
@@ -169,7 +163,7 @@ class MainWindow(QMainWindow):
         return -1
 
     def _about(self) -> None:
-        QMessageBox.information(self, "Acerca de Pini", "Pini 0.1\\nPlanificador Inteligente de Horarios Escolares.")
+        QMessageBox.information(self, "Acerca de Pini", "Pini 0.1\nPlanificador Inteligente de Horarios Escolares.")
 
     def _not_implemented(self) -> None:
         QMessageBox.information(self, "Pini", "Esta función se implementará en los próximos commits.")
