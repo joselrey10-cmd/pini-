@@ -15,6 +15,7 @@ from pini_desktop.ui.views.schedule_view import ScheduleView
 from pini_desktop.ui.views.school_template_view import SchoolTemplateView
 from pini_desktop.ui.views.self_check_view import SelfCheckView
 from pini_desktop.ui.views.subjects_view import SubjectsView
+from pini_desktop.ui.views.substitution_view import SubstitutionView
 from pini_desktop.ui.views.teacher_availability_view import TeacherAvailabilityView
 from pini_desktop.ui.views.teachers_view import TeachersView
 from pini_desktop.ui.views.timetable_settings_view import TimetableSettingsView
@@ -65,6 +66,7 @@ class MainWindow(QMainWindow):
         schedule_menu.addAction("Generar horario", self._show_schedule)
         schedule_menu.addAction("Horario por curso", self._show_course_schedule)
         schedule_menu.addAction("Horario por profesor", self._show_teacher_schedule)
+        schedule_menu.addAction("Sustituciones", self._show_substitutions)
         schedule_menu.addAction("Optimizar", self._not_implemented)
 
         reports_menu = menu.addMenu("Informes")
@@ -131,6 +133,7 @@ class MainWindow(QMainWindow):
                 ("Generar horario básico", self._show_schedule),
                 ("Ver horario por curso", self._show_course_schedule),
                 ("Ver horario por profesor", self._show_teacher_schedule),
+                ("Sustituciones inteligentes", self._show_substitutions),
             ]),
             ("Informes y herramientas", [
                 ("Exportar horarios", self._show_export),
@@ -175,6 +178,9 @@ class MainWindow(QMainWindow):
 
     def _show_self_check(self) -> None:
         self._open_tab("Comprobación", SelfCheckView)
+
+    def _show_substitutions(self) -> None:
+        self._open_tab("Sustituciones", SubstitutionView)
 
     def _show_timetable_settings(self) -> None:
         self._open_tab("Horario general", TimetableSettingsView)
