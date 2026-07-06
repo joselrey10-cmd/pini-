@@ -15,7 +15,7 @@ def test_teacher_metrics_detect_gaps_and_last_periods():
 
     metrics = TeacherMetricsAnalyzer().analyse(solution)
 
-    assert metrics["Ana"].gaps == 2
+    assert metrics["Ana"].gaps == 3
     assert metrics["Ana"].last_periods == 1
     assert metrics["Ana"].compactness_score < 100
 

@@ -1,5 +1,4 @@
 import sqlite3
-from pathlib import Path
 from pini_desktop.config.settings import DATA_DIR, DATABASE_PATH
 
 SCHEMA = """
@@ -124,10 +123,9 @@ CREATE TABLE IF NOT EXISTS dynamic_rules(
 """
 
 def initialise_database(database_path=None) -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
     target_path = database_path or DATABASE_PATH
-    Path(target_path).parent.mkdir(parents=True, exist_ok=True)
-
-    connection = sqlite3.connect(target_path)
+connection = sqlite3.connect(target_path)
     try:
         connection.executescript(SCHEMA)
         connection.execute(

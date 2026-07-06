@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from pini_desktop.services.dynamic_rule_service import DynamicRule, DynamicRuleService
 
 
-from pini_desktop.database.bootstrap import initialise_database
 @dataclass(frozen=True)
 class RuntimeDecision:
     allowed: bool

@@ -6,7 +6,6 @@ from pini_desktop.config.settings import DATA_DIR
 from pini_desktop.services.substitution_registry_service import SubstitutionRegistryService
 
 
-from pini_desktop.database.bootstrap import initialise_database
 @dataclass(frozen=True)
 class SubstitutionReportSummary:
     total: int

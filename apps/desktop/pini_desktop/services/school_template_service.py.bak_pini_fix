@@ -6,7 +6,6 @@ from pini_desktop.services.room_service import RoomService
 from pini_desktop.services.subject_service import SubjectService
 
 
-from pini_desktop.database.bootstrap import initialise_database
 @dataclass(frozen=True)
 class TemplateResult:
     created_courses: int = 0

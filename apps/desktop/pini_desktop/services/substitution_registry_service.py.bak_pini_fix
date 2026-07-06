@@ -39,7 +39,6 @@ class SubstitutionRecord:
 class SubstitutionRegistryService:
     def __init__(self, database_path=DATABASE_PATH):
         self.database_path = database_path
-        initialise_database(database_path=self.database_path)
         initialise_database()
         self._ensure_table()
 

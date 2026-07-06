@@ -7,7 +7,6 @@ from openpyxl.utils import get_column_letter
 from pini_desktop.services.schedule_view_service import ScheduleViewService
 
 
-from pini_desktop.database.bootstrap import initialise_database
 class ExcelExportService:
     DAY_NAMES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
 

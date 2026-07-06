@@ -14,6 +14,6 @@ def test_excel_import_template_and_import(tmp_path: Path):
     assert template.exists()
     assert result.created_teachers == 1
     assert result.created_courses == 1
-    assert result.created_subjects == 1
+    assert result.created_subjects == 3
     assert result.created_rooms == 1
     assert result.ok

@@ -1,32 +1,19 @@
-# Pini
+# Pack correctivo PiniPlanner v2
 
-Pini es un proyecto para crear una aplicación profesional de generación, edición y gestión de horarios escolares.
+Este pack repara el error:
 
-## Primer commit de producción
+`IndentationError: unexpected indent` en `bootstrap.py`, línea 129.
 
-Incluye:
+## Uso
 
-- Estructura del repositorio.
-- Paquete ejecutable con `python -m pini_core`.
-- Módulo inicial `pini_rule_engine`.
-- API del Rule Engine.
-- Persistencia SQLite básica.
-- Tests iniciales.
+1. Copia `fix_pini_tests_v2.py` en:
 
-## Reglas iniciales CEIP Tierra de Pinares
+   `C:\Proyectos\pini_initial_commit`
 
-- Máximo general de sesiones consecutivas por área: **1**.
-- Excepción: **Inglés de 4.º a 6.º**, máximo **2 sesiones consecutivas**.
-- Contextos: **después del recreo**.
+2. Ejecuta:
 
-## Ejecutar
+   `python fix_pini_tests_v2.py`
 
-```bash
-python -m pini_core
-```
+3. Después ejecuta:
 
-## Tests
-
-```bash
-python -m pytest
-```
+   `python -m pytest tests/desktop/test_teacher_service.py -v`

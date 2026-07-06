@@ -17,7 +17,6 @@ class BackupResult:
 class BackupService:
     def __init__(self, database_path=DATABASE_PATH, backup_dir: Path | None = None):
         self.database_path = Path(database_path)
-        initialise_database(database_path=self.database_path)
         self.backup_dir = backup_dir or (DATA_DIR / "backups")
         initialise_database()
 

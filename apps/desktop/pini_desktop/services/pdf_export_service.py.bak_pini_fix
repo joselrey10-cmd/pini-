@@ -8,7 +8,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from pini_desktop.services.schedule_view_service import ScheduleViewService
 
 
-from pini_desktop.database.bootstrap import initialise_database
 class PdfExportService:
     DAY_NAMES = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"]
 

@@ -12,7 +12,6 @@ from pini_desktop.services.subject_service import Subject, SubjectService
 from pini_desktop.services.teacher_service import Teacher, TeacherService
 
 
-from pini_desktop.database.bootstrap import initialise_database
 @dataclass(frozen=True)
 class ImportResult:
     created_teachers: int = 0
