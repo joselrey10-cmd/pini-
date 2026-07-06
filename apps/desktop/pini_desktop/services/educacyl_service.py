@@ -17,6 +17,9 @@ class DesktopEducaCyLSyncSummary:
     rooms: int
     warnings: tuple[str, ...]
     last_sync: str = ""
+    created: int = 0
+    updated: int = 0
+    deleted: int = 0
 
 
 class DesktopEducaCyLService:
@@ -32,6 +35,9 @@ class DesktopEducaCyLService:
         result = self.service.sync_from_file(path)
         return self._summary(result)
 
+    def preview_diff_from_file(self, path: str | Path):
+        return self.service.preview_diff_from_file(path)
+
     def create_template(self, path: str | Path) -> Path:
         return OfficialImportTemplate().create(path)
 
@@ -39,6 +45,7 @@ class DesktopEducaCyLService:
         return self.service.cache.read_metadata()
 
     def _summary(self, result) -> DesktopEducaCyLSyncSummary:
+        diff = result.diff
         return DesktopEducaCyLSyncSummary(
             authenticated=result.session.authenticated,
             source=result.package.source,
@@ -48,4 +55,7 @@ class DesktopEducaCyLService:
             rooms=result.import_result.rooms,
             warnings=result.import_result.warnings,
             last_sync=result.cache_metadata.get("last_sync", ""),
+            created=len(diff.created) if diff else 0,
+            updated=len(diff.updated) if diff else 0,
+            deleted=len(diff.deleted) if diff else 0,
         )
