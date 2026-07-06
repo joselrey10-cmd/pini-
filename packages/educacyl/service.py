@@ -4,12 +4,14 @@ from pathlib import Path
 from .auth import AuthSession, EducaCyLCredentials
 from .cache import EducaCyLCache
 from .client import EducaCyLClient, MockEducaCyLClient
+from .conflict_resolver import ConflictResolutionPlan, ConflictResolutionPolicy, ImportConflictResolver
 from .diff import ImportDiff, ImportPackageDiffer
 from .file_parser import OfficialFileParser
 from .importer import EducaCyLImporter, ImportResult
 from .models import ImportPackage
 from .package_store import ImportPackageStore
 from .parser import EducaCyLParser
+from .validator import ImportPackageValidator, ImportValidationReport
 
 
 @dataclass(frozen=True)
@@ -19,6 +21,8 @@ class SyncResult:
     import_result: ImportResult
     cache_metadata: dict
     diff: ImportDiff | None = None
+    validation_report: ImportValidationReport | None = None
+    resolution_plan: ConflictResolutionPlan | None = None
 
 
 class EducaCyLIntegrationService:
@@ -30,6 +34,8 @@ class EducaCyLIntegrationService:
         self.cache = EducaCyLCache(cache_dir)
         self.package_store = ImportPackageStore(cache_dir)
         self.differ = ImportPackageDiffer()
+        self.validator = ImportPackageValidator()
+        self.resolver = ImportConflictResolver()
 
     def sync(self, credentials: EducaCyLCredentials) -> SyncResult:
         session = self.client.authenticate(credentials)
@@ -46,10 +52,20 @@ class EducaCyLIntegrationService:
         new_package = self.file_parser.parse_file(path)
         return self.differ.diff(old_package, new_package)
 
+    def validate_file(self, path: str | Path) -> ImportValidationReport:
+        package = self.file_parser.parse_file(path)
+        return self.validator.validate(package)
+
+    def preview_resolution_from_file(self, path: str | Path, policy: ConflictResolutionPolicy | None = None) -> ConflictResolutionPlan:
+        diff = self.preview_diff_from_file(path)
+        return self.resolver.build_plan(diff, policy)
+
     def _finish_sync(self, session: AuthSession, package: ImportPackage) -> SyncResult:
         old_package = self.package_store.load()
         diff = self.differ.diff(old_package, package) if old_package else None
+        validation_report = self.validator.validate(package)
+        resolution_plan = self.resolver.build_plan(diff) if diff else None
         result = self.importer.import_package(package)
         self.cache.write_metadata(package.source)
         self.package_store.save(package)
-        return SyncResult(session, package, result, self.cache.read_metadata(), diff)
+        return SyncResult(session, package, result, self.cache.read_metadata(), diff, validation_report, resolution_plan)
