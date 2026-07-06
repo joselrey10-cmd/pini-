@@ -1,0 +1,4 @@
+from .constraints import ConstraintObjective
+from .teacher_compactness import TeacherCompactnessObjective
+from .student_distribution import StudentDistributionObjective
+from .room_quality import RoomQualityObjective
