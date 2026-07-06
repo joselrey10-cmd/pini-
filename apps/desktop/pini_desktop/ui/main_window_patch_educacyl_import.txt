@@ -1,0 +1,14 @@
+Para enlazar manualmente si hace falta:
+
+1) Import:
+from pini_desktop.ui.views.educacyl_import_view import EducaCyLImportView
+
+2) En menú Archivo:
+file_menu.addAction("Importar EducaCyL", self._show_educacyl_import)
+
+3) Método:
+def _show_educacyl_import(self) -> None:
+    self._open_tab("Importar EducaCyL", EducaCyLImportView)
+
+4) Botón en Inicio:
+("Importar EducaCyL", self._show_educacyl_import),
