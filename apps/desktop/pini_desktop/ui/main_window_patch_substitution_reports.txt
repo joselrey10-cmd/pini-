@@ -1,0 +1,15 @@
+Para enlazar manualmente si lo necesitas:
+
+1) Import:
+from pini_desktop.ui.views.substitution_report_view import SubstitutionReportView
+
+2) En menú Horarios o Informes:
+schedule_menu.addAction("Informes de sustituciones", self._show_substitution_reports)
+reports_menu.addAction("Informes de sustituciones", self._show_substitution_reports)
+
+3) Método:
+def _show_substitution_reports(self) -> None:
+    self._open_tab("Informes de sustituciones", SubstitutionReportView)
+
+4) Botón en Inicio:
+("Informes de sustituciones", self._show_substitution_reports),
