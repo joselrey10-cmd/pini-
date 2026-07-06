@@ -7,6 +7,7 @@ from .client import EducaCyLClient, MockEducaCyLClient
 from .conflict_resolver import ConflictResolutionPlan, ConflictResolutionPolicy, ImportConflictResolver
 from .diff import ImportDiff, ImportPackageDiffer
 from .file_parser import OfficialFileParser
+from .history import SyncHistoryStore
 from .importer import EducaCyLImporter, ImportResult
 from .models import ImportPackage
 from .offline import OfflineImportProvider, OfflineStatus
@@ -35,6 +36,7 @@ class EducaCyLIntegrationService:
         self.cache = EducaCyLCache(cache_dir)
         self.package_store = ImportPackageStore(cache_dir)
         self.offline = OfflineImportProvider(cache_dir)
+        self.history = SyncHistoryStore(cache_dir)
         self.differ = ImportPackageDiffer()
         self.validator = ImportPackageValidator()
         self.resolver = ImportConflictResolver()
@@ -42,18 +44,18 @@ class EducaCyLIntegrationService:
     def sync(self, credentials: EducaCyLCredentials) -> SyncResult:
         session = self.client.authenticate(credentials)
         package = self.parser.parse(self.client.download_school_data())
-        return self._finish_sync(session, package)
+        return self._finish_sync(session, package, register_history=True)
 
     def sync_from_file(self, path: str | Path) -> SyncResult:
         session = AuthSession(authenticated=True, token="", provider="file")
         package = self.file_parser.parse_file(path)
-        return self._finish_sync(session, package)
+        return self._finish_sync(session, package, register_history=True)
 
     def use_offline_cache(self) -> SyncResult:
         package = self.offline.load_cached_package()
         session = AuthSession(authenticated=True, provider="offline-cache")
         result = self.importer.import_package(package)
-        return SyncResult(
+        sync_result = SyncResult(
             session=session,
             package=package,
             import_result=result,
@@ -62,6 +64,14 @@ class EducaCyLIntegrationService:
             validation_report=self.validator.validate(package),
             resolution_plan=None,
         )
+        self.history.add(self.history.build_record(sync_result))
+        return sync_result
+
+    def list_history(self):
+        return self.history.list_records()
+
+    def clear_history(self) -> None:
+        self.history.clear()
 
     def offline_status(self) -> OfflineStatus:
         return self.offline.status()
@@ -82,7 +92,7 @@ class EducaCyLIntegrationService:
         diff = self.preview_diff_from_file(path)
         return self.resolver.build_plan(diff, policy)
 
-    def _finish_sync(self, session: AuthSession, package: ImportPackage) -> SyncResult:
+    def _finish_sync(self, session: AuthSession, package: ImportPackage, register_history: bool = True) -> SyncResult:
         old_package = self.package_store.load()
         diff = self.differ.diff(old_package, package) if old_package else None
         validation_report = self.validator.validate(package)
@@ -90,4 +100,10 @@ class EducaCyLIntegrationService:
         result = self.importer.import_package(package)
         self.cache.write_metadata(package.source)
         self.package_store.save(package)
-        return SyncResult(session, package, result, self.cache.read_metadata(), diff, validation_report, resolution_plan)
+
+        sync_result = SyncResult(session, package, result, self.cache.read_metadata(), diff, validation_report, resolution_plan)
+
+        if register_history:
+            self.history.add(self.history.build_record(sync_result))
+
+        return sync_result

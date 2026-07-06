@@ -1,0 +1,14 @@
+Para enlazar manualmente si hace falta:
+
+1) Import:
+from pini_desktop.ui.views.educacyl_history_view import EducaCyLHistoryView
+
+2) En menú Archivo o Herramientas:
+tools_menu.addAction("Historial EducaCyL", self._show_educacyl_history)
+
+3) Método:
+def _show_educacyl_history(self) -> None:
+    self._open_tab("Historial EducaCyL", EducaCyLHistoryView)
+
+4) Botón en Inicio:
+("Historial EducaCyL", self._show_educacyl_history),

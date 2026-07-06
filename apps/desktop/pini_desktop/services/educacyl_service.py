@@ -32,6 +32,22 @@ class DesktopOfflineStatus:
     rooms: int = 0
 
 
+@dataclass(frozen=True)
+class DesktopSyncHistoryRecord:
+    id: str
+    source: str
+    provider: str
+    created_at: str
+    teachers: int
+    courses: int
+    subjects: int
+    rooms: int
+    created: int
+    updated: int
+    deleted: int
+    warnings: tuple[str, ...]
+
+
 class DesktopEducaCyLService:
     def __init__(self, cache_dir=None):
         self.cache_dir = cache_dir or (DATA_DIR / "educacyl_cache")
@@ -49,16 +65,31 @@ class DesktopEducaCyLService:
         result = self.service.use_offline_cache()
         return self._summary(result)
 
+    def list_history(self) -> list[DesktopSyncHistoryRecord]:
+        return [
+            DesktopSyncHistoryRecord(
+                id=item.id,
+                source=item.source,
+                provider=item.provider,
+                created_at=item.created_at,
+                teachers=item.teachers,
+                courses=item.courses,
+                subjects=item.subjects,
+                rooms=item.rooms,
+                created=item.created,
+                updated=item.updated,
+                deleted=item.deleted,
+                warnings=item.warnings,
+            )
+            for item in self.service.list_history()
+        ]
+
+    def clear_history(self) -> None:
+        self.service.clear_history()
+
     def offline_status(self) -> DesktopOfflineStatus:
         status = self.service.offline_status()
-        return DesktopOfflineStatus(
-            available=status.available,
-            source=status.source,
-            teachers=status.teachers,
-            courses=status.courses,
-            subjects=status.subjects,
-            rooms=status.rooms,
-        )
+        return DesktopOfflineStatus(status.available, status.source, status.teachers, status.courses, status.subjects, status.rooms)
 
     def clear_cache(self) -> None:
         self.service.clear_cache()
