@@ -9,6 +9,7 @@ from .diff import ImportDiff, ImportPackageDiffer
 from .file_parser import OfficialFileParser
 from .importer import EducaCyLImporter, ImportResult
 from .models import ImportPackage
+from .offline import OfflineImportProvider, OfflineStatus
 from .package_store import ImportPackageStore
 from .parser import EducaCyLParser
 from .validator import ImportPackageValidator, ImportValidationReport
@@ -33,6 +34,7 @@ class EducaCyLIntegrationService:
         self.importer = EducaCyLImporter()
         self.cache = EducaCyLCache(cache_dir)
         self.package_store = ImportPackageStore(cache_dir)
+        self.offline = OfflineImportProvider(cache_dir)
         self.differ = ImportPackageDiffer()
         self.validator = ImportPackageValidator()
         self.resolver = ImportConflictResolver()
@@ -46,6 +48,26 @@ class EducaCyLIntegrationService:
         session = AuthSession(authenticated=True, token="", provider="file")
         package = self.file_parser.parse_file(path)
         return self._finish_sync(session, package)
+
+    def use_offline_cache(self) -> SyncResult:
+        package = self.offline.load_cached_package()
+        session = AuthSession(authenticated=True, provider="offline-cache")
+        result = self.importer.import_package(package)
+        return SyncResult(
+            session=session,
+            package=package,
+            import_result=result,
+            cache_metadata=self.cache.read_metadata(),
+            diff=None,
+            validation_report=self.validator.validate(package),
+            resolution_plan=None,
+        )
+
+    def offline_status(self) -> OfflineStatus:
+        return self.offline.status()
+
+    def clear_cache(self) -> None:
+        self.cache.clear()
 
     def preview_diff_from_file(self, path: str | Path) -> ImportDiff:
         old_package = self.package_store.load() or ImportPackage()

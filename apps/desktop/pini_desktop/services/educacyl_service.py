@@ -22,6 +22,16 @@ class DesktopEducaCyLSyncSummary:
     deleted: int = 0
 
 
+@dataclass(frozen=True)
+class DesktopOfflineStatus:
+    available: bool
+    source: str = ""
+    teachers: int = 0
+    courses: int = 0
+    subjects: int = 0
+    rooms: int = 0
+
+
 class DesktopEducaCyLService:
     def __init__(self, cache_dir=None):
         self.cache_dir = cache_dir or (DATA_DIR / "educacyl_cache")
@@ -34,6 +44,24 @@ class DesktopEducaCyLService:
     def sync_from_file(self, path: str | Path) -> DesktopEducaCyLSyncSummary:
         result = self.service.sync_from_file(path)
         return self._summary(result)
+
+    def use_offline_cache(self) -> DesktopEducaCyLSyncSummary:
+        result = self.service.use_offline_cache()
+        return self._summary(result)
+
+    def offline_status(self) -> DesktopOfflineStatus:
+        status = self.service.offline_status()
+        return DesktopOfflineStatus(
+            available=status.available,
+            source=status.source,
+            teachers=status.teachers,
+            courses=status.courses,
+            subjects=status.subjects,
+            rooms=status.rooms,
+        )
+
+    def clear_cache(self) -> None:
+        self.service.clear_cache()
 
     def preview_diff_from_file(self, path: str | Path):
         return self.service.preview_diff_from_file(path)

@@ -26,3 +26,8 @@ class EducaCyLCache:
 
     def has_sync(self) -> bool:
         return bool(self.read_metadata().get("last_sync"))
+
+    def clear(self) -> None:
+        for path in self.cache_dir.glob("*"):
+            if path.is_file():
+                path.unlink()
