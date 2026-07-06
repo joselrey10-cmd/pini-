@@ -17,8 +17,6 @@ class ScheduledSessionInfo:
 
 
 class PiniSubstitutionDataAdapter:
-    """Adaptador entre la base SQLite de Pini y el motor de sustituciones."""
-
     def __init__(self, database_path):
         self.database_path = Path(database_path)
 
@@ -69,6 +67,9 @@ class PiniSubstitutionDataAdapter:
         finally:
             con.close()
 
+    def absences_from_teacher_periods(self, teacher_id: int, day: int, periods: list[int]) -> list[Absence]:
+        return [self.absence_from_teacher_period(teacher_id, day, period) for period in periods]
+
     def candidate_teachers(self, absent_teacher_id: int, day: int, period: int) -> list[CandidateTeacher]:
         con = self._connect()
         try:
@@ -108,6 +109,12 @@ class PiniSubstitutionDataAdapter:
             return candidates
         finally:
             con.close()
+
+    def candidates_by_period(self, absent_teacher_id: int, day: int, periods: list[int]) -> dict[int, list[CandidateTeacher]]:
+        return {
+            period: self.candidate_teachers(absent_teacher_id, day, period)
+            for period in periods
+        }
 
     def _is_teacher_busy(self, con, teacher_id: int, day: int, period: int) -> bool:
         row = con.execute(
