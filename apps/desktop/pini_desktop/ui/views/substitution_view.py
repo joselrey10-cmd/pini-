@@ -17,7 +17,7 @@ from pini_desktop.services.teacher_service import TeacherService
 
 
 class SubstitutionView(QWidget):
-    HEADERS = ["Profesor/a", "Puntuación", "Motivos", "Avisos"]
+    HEADERS = ["Periodo", "Profesor/a", "Puntuación", "Motivos", "Avisos"]
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -28,23 +28,30 @@ class SubstitutionView(QWidget):
         title.setStyleSheet("font-size: 18px; font-weight: bold;")
 
         description = QLabel(
-            "Selecciona el profesor ausente, día y periodo. Pini propondrá las mejores sustituciones disponibles."
+            "Selecciona el profesor ausente, el día y el tramo horario. "
+            "Pini propondrá sustituciones para cada periodo."
         )
         description.setWordWrap(True)
 
         self.teacher_combo = QComboBox()
+
         self.day_input = QSpinBox()
         self.day_input.setRange(1, 5)
         self.day_input.setValue(1)
 
-        self.period_input = QSpinBox()
-        self.period_input.setRange(1, 8)
-        self.period_input.setValue(1)
+        self.start_period_input = QSpinBox()
+        self.start_period_input.setRange(1, 8)
+        self.start_period_input.setValue(1)
+
+        self.end_period_input = QSpinBox()
+        self.end_period_input.setRange(1, 8)
+        self.end_period_input.setValue(1)
 
         form = QFormLayout()
         form.addRow("Profesor ausente", self.teacher_combo)
         form.addRow("Día", self.day_input)
-        form.addRow("Periodo", self.period_input)
+        form.addRow("Desde periodo", self.start_period_input)
+        form.addRow("Hasta periodo", self.end_period_input)
 
         find_button = QPushButton("Buscar sustituciones")
         find_button.clicked.connect(self.find_substitutions)
@@ -80,32 +87,53 @@ class SubstitutionView(QWidget):
             QMessageBox.information(self, "Sin profesorado", "No hay profesorado cargado.")
             return
 
-        proposals = self.substitution_service.propose_for_absence(
+        start_period = self.start_period_input.value()
+        end_period = self.end_period_input.value()
+
+        if end_period < start_period:
+            QMessageBox.warning(self, "Tramo incorrecto", "El periodo final no puede ser menor que el inicial.")
+            return
+
+        plans = self.substitution_service.propose_for_absence_range(
             absent_teacher_id=int(teacher_id),
             day=self.day_input.value(),
-            period=self.period_input.value(),
+            start_period=start_period,
+            end_period=end_period,
         )
 
-        self.table.setRowCount(len(proposals))
+        rows = []
+        for plan in plans:
+            if plan.proposals:
+                for proposal in plan.proposals:
+                    rows.append((plan.period, proposal))
+            else:
+                rows.append((plan.period, None))
 
-        for row_index, proposal in enumerate(proposals):
-            values = [
-                proposal.teacher,
-                str(proposal.score),
-                "; ".join(proposal.reasons),
-                "; ".join(proposal.warnings),
-            ]
+        self.table.setRowCount(len(rows))
+
+        for row_index, (period, proposal) in enumerate(rows):
+            if proposal is None:
+                values = [f"P{period}", "Sin propuesta", "", "", "No hay candidatos disponibles"]
+            else:
+                values = [
+                    f"P{period}",
+                    proposal.teacher,
+                    str(proposal.score),
+                    "; ".join(proposal.reasons),
+                    "; ".join(proposal.warnings),
+                ]
+
             for column_index, value in enumerate(values):
                 item = QTableWidgetItem(value)
-                if column_index == 1:
+                if column_index in (0, 2):
                     item.setTextAlignment(Qt.AlignCenter)
                 self.table.setItem(row_index, column_index, item)
 
         self.table.resizeColumnsToContents()
 
-        if not proposals:
+        if not rows:
             QMessageBox.information(
                 self,
                 "Sin propuestas",
-                "No se han encontrado sustituciones disponibles para esa franja.",
+                "No se han encontrado sustituciones disponibles para ese tramo.",
             )
