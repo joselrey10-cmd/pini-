@@ -12,6 +12,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from pini_desktop.services.substitution_registry_service import SubstitutionRegistryService
 from pini_desktop.services.substitution_service import PiniSubstitutionService
 from pini_desktop.services.teacher_service import TeacherService
 
@@ -23,13 +24,15 @@ class SubstitutionView(QWidget):
         super().__init__(parent)
         self.teacher_service = TeacherService()
         self.substitution_service = PiniSubstitutionService()
+        self.registry_service = SubstitutionRegistryService()
+        self.current_rows = []
 
         title = QLabel("Sustituciones inteligentes")
         title.setStyleSheet("font-size: 18px; font-weight: bold;")
 
         description = QLabel(
             "Selecciona el profesor ausente, el día y el tramo horario. "
-            "Pini propondrá sustituciones para cada periodo."
+            "Pini propondrá sustituciones para cada periodo. Después puedes guardar la propuesta seleccionada."
         )
         description.setWordWrap(True)
 
@@ -56,6 +59,9 @@ class SubstitutionView(QWidget):
         find_button = QPushButton("Buscar sustituciones")
         find_button.clicked.connect(self.find_substitutions)
 
+        register_button = QPushButton("Guardar propuesta seleccionada")
+        register_button.clicked.connect(self.register_selected_proposal)
+
         refresh_button = QPushButton("Actualizar profesorado")
         refresh_button.clicked.connect(self.load_teachers)
 
@@ -70,6 +76,7 @@ class SubstitutionView(QWidget):
         layout.addWidget(description)
         layout.addLayout(form)
         layout.addWidget(find_button)
+        layout.addWidget(register_button)
         layout.addWidget(refresh_button)
         layout.addWidget(self.table)
 
@@ -101,17 +108,17 @@ class SubstitutionView(QWidget):
             end_period=end_period,
         )
 
-        rows = []
+        self.current_rows = []
         for plan in plans:
             if plan.proposals:
                 for proposal in plan.proposals:
-                    rows.append((plan.period, proposal))
+                    self.current_rows.append((plan.period, proposal))
             else:
-                rows.append((plan.period, None))
+                self.current_rows.append((plan.period, None))
 
-        self.table.setRowCount(len(rows))
+        self.table.setRowCount(len(self.current_rows))
 
-        for row_index, (period, proposal) in enumerate(rows):
+        for row_index, (period, proposal) in enumerate(self.current_rows):
             if proposal is None:
                 values = [f"P{period}", "Sin propuesta", "", "", "No hay candidatos disponibles"]
             else:
@@ -131,9 +138,45 @@ class SubstitutionView(QWidget):
 
         self.table.resizeColumnsToContents()
 
-        if not rows:
+        if not self.current_rows:
             QMessageBox.information(
                 self,
                 "Sin propuestas",
                 "No se han encontrado sustituciones disponibles para ese tramo.",
             )
+
+    def register_selected_proposal(self) -> None:
+        selected = self.table.selectionModel().selectedRows()
+        if not selected:
+            QMessageBox.information(self, "Selecciona propuesta", "Selecciona una propuesta de la tabla.")
+            return
+
+        row = selected[0].row()
+        if row >= len(self.current_rows):
+            return
+
+        period, proposal = self.current_rows[row]
+        if proposal is None:
+            QMessageBox.warning(self, "Sin propuesta", "No se puede guardar un periodo sin propuesta.")
+            return
+
+        teacher_id = self.teacher_combo.currentData()
+        if teacher_id is None:
+            QMessageBox.warning(self, "Sin profesor", "No hay profesor ausente seleccionado.")
+            return
+
+        record_id = self.registry_service.register(
+            absent_teacher_id=int(teacher_id),
+            substitute_teacher_name=proposal.teacher,
+            day=self.day_input.value(),
+            period=period,
+            score=proposal.score,
+            reasons="; ".join(proposal.reasons),
+            warnings="; ".join(proposal.warnings),
+        )
+
+        QMessageBox.information(
+            self,
+            "Sustitución guardada",
+            f"Sustitución registrada correctamente con ID {record_id}.",
+        )
