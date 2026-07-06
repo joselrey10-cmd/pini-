@@ -1,3 +1,6 @@
+from pini_desktop.ui.dialogs.substitution_report_dialog import (
+    SubstitutionReportDialog,
+)
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QMainWindow, QMessageBox, QPushButton, QScrollArea, QStatusBar, QTabWidget, QVBoxLayout, QWidget
 
@@ -83,6 +86,18 @@ class MainWindow(QMainWindow):
         help_menu = menu.addMenu("Ayuda")
         help_menu.addAction("Comprobar y reparar Pini", self._show_self_check)
         help_menu.addAction("Acerca de Pini", self._about)
+def open_substitution_report(self):
+    substitutions = []
+
+    if hasattr(self, "substitution_service"):
+        substitutions = self.substitution_service.get_all_substitutions()
+
+    dialog = SubstitutionReportDialog(
+        substitutions=substitutions,
+        parent=self,
+    )
+
+    dialog.exec()
 
     def _build_central_widget(self) -> None:
         self.tabs.addTab(self._home_widget(), "Inicio")
@@ -251,3 +266,6 @@ class MainWindow(QMainWindow):
 
     def _not_implemented(self) -> None:
         QMessageBox.information(self, "Pini", "Esta función se implementará en próximos commits.")
+
+self.open_substitution_report()
+
