@@ -29,7 +29,7 @@ class SchedulerService:
     def __init__(self, database_path=DATABASE_PATH):
         self.database_path = database_path
         initialise_database(database_path=self.database_path)
-        initialise_database()
+
         self.repository = SchedulerRepository(database_path)
         self.rule_runtime = RuleRuntimeService(database_path)
 
