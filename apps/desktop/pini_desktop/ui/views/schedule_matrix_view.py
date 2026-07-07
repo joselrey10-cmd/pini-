@@ -7,6 +7,7 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
+    QSplitter,
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
@@ -15,6 +16,7 @@ from PySide6.QtWidgets import (
 from pini_desktop.services.editor.editor_service import EditorService
 from pini_desktop.services.editor.validation.live_validation import LiveMoveValidator
 from pini_desktop.services.schedule_view_service import ScheduleViewService
+from pini_desktop.ui.views.editor_impact_panel import EditorImpactPanel
 from pini_desktop.ui.views.schedule_dragdrop_table import ScheduleDragDropTable
 
 
@@ -76,10 +78,18 @@ class ScheduleMatrixView(QWidget):
         self.table.dragPreviewRequested.connect(self.preview_drag_target)
         self.table.dragPreviewCleared.connect(self.clear_live_preview)
 
+        self.impact_panel = EditorImpactPanel()
+
+        splitter = QSplitter()
+        splitter.addWidget(self.table)
+        splitter.addWidget(self.impact_panel)
+        splitter.setStretchFactor(0, 4)
+        splitter.setStretchFactor(1, 1)
+
         layout = QVBoxLayout(self)
         layout.addLayout(top)
         layout.addWidget(self.status_label)
-        layout.addWidget(self.table)
+        layout.addWidget(splitter)
 
         self.reload_entities()
 
@@ -256,6 +266,8 @@ class ScheduleMatrixView(QWidget):
             self.load_matrix()
 
     def _show_result(self, result) -> None:
+        self.impact_panel.show_result(result)
+
         details = []
         if result.messages:
             details.extend(result.messages)
