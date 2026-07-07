@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from pini_desktop.services.editor.editor_service import EditorService
 from pini_desktop.services.editor.validation.live_validation import LiveMoveValidator
 from pini_desktop.services.schedule_view_service import ScheduleViewService
+from pini_desktop.ui.views.editor_history_panel import EditorHistoryPanel
 from pini_desktop.ui.views.editor_impact_panel import EditorImpactPanel
 from pini_desktop.ui.views.schedule_dragdrop_table import ScheduleDragDropTable
 
@@ -79,10 +80,17 @@ class ScheduleMatrixView(QWidget):
         self.table.dragPreviewCleared.connect(self.clear_live_preview)
 
         self.impact_panel = EditorImpactPanel()
+        self.history_panel = EditorHistoryPanel()
+
+        right_panel = QSplitter(Qt.Vertical)
+        right_panel.addWidget(self.impact_panel)
+        right_panel.addWidget(self.history_panel)
+        right_panel.setStretchFactor(0, 1)
+        right_panel.setStretchFactor(1, 1)
 
         splitter = QSplitter()
         splitter.addWidget(self.table)
-        splitter.addWidget(self.impact_panel)
+        splitter.addWidget(right_panel)
         splitter.setStretchFactor(0, 4)
         splitter.setStretchFactor(1, 1)
 
@@ -217,21 +225,23 @@ class ScheduleMatrixView(QWidget):
         self.marked_session_id = int(session_id)
         self.marked_session_label = label.replace("\n", " / ")
         self.status_label.setText(f"Sesión marcada: {self.marked_session_label}")
+        self.history_panel.add_text(f"Sesión marcada: {self.marked_session_label}")
 
     def clear_marked_session(self) -> None:
         self.marked_session_id = None
         self.marked_session_label = ""
         self.status_label.setText("Editor: selección cancelada.")
+        self.history_panel.add_text("Selección cancelada")
 
     def move_session_by_drag(self, session_id: int, day: int, period: int) -> None:
         result = self.editor_service.move_session(session_id, day, period)
-        self._show_result(result)
+        self._show_result(result, "Mover sesión")
         if result.success:
             self.load_matrix()
 
     def swap_sessions_by_drag(self, first_session_id: int, second_session_id: int) -> None:
         result = self.editor_service.swap_sessions(first_session_id, second_session_id)
-        self._show_result(result)
+        self._show_result(result, "Intercambiar sesiones")
         if result.success:
             self.load_matrix()
 
@@ -239,7 +249,7 @@ class ScheduleMatrixView(QWidget):
         if self.marked_session_id is None:
             return
         result = self.editor_service.move_session(self.marked_session_id, day, period)
-        self._show_result(result)
+        self._show_result(result, "Mover sesión marcada")
         if result.success:
             self.clear_marked_session()
             self.load_matrix()
@@ -248,25 +258,26 @@ class ScheduleMatrixView(QWidget):
         if self.marked_session_id is None:
             return
         result = self.editor_service.swap_sessions(self.marked_session_id, int(other_session_id))
-        self._show_result(result)
+        self._show_result(result, "Intercambiar sesión marcada")
         if result.success:
             self.clear_marked_session()
             self.load_matrix()
 
     def undo_last_action(self) -> None:
         result = self.editor_service.undo()
-        self._show_result(result)
+        self._show_result(result, "Deshacer")
         if result.success:
             self.load_matrix()
 
     def redo_last_action(self) -> None:
         result = self.editor_service.redo()
-        self._show_result(result)
+        self._show_result(result, "Rehacer")
         if result.success:
             self.load_matrix()
 
-    def _show_result(self, result) -> None:
+    def _show_result(self, result, action: str = "Acción") -> None:
         self.impact_panel.show_result(result)
+        self.history_panel.add_result(action, result)
 
         details = []
         if result.messages:
