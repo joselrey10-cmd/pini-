@@ -38,8 +38,11 @@ class AlternativesPanel(QWidget):
 
         self.summary_label.setText(f"Alternativas encontradas: {len(self.current_alternatives)}")
         for alternative in self.current_alternatives:
+            bullets = "\n".join(alternative.bullets)
             self.list_widget.addItem(
-                f"{alternative.title} · +{alternative.estimated_delta}\n{alternative.explanation}"
+                f"{alternative.title} · +{alternative.estimated_delta}\n"
+                f"{alternative.explanation}\n"
+                f"{bullets}"
             )
 
     def clear(self):

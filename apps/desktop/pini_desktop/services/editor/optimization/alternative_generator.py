@@ -1,6 +1,8 @@
 from dataclasses import dataclass
 
+from pini_desktop.services.editor.optimization.alternative_ranker import AlternativeRanker
 from pini_desktop.services.editor.optimization.candidate_builder import CandidateBuilder, MoveCandidate
+from pini_desktop.services.editor.optimization.explanation_builder import AlternativeExplanation, ExplanationBuilder
 from pini_desktop.services.editor.optimization.score_estimator import ScoreEstimator
 
 
@@ -12,6 +14,7 @@ class EditorAlternative:
     candidate: MoveCandidate
     estimated_score: float = 0.0
     reasons: tuple[str, ...] = ()
+    bullets: tuple[str, ...] = ()
 
 
 class AlternativeGenerator:
@@ -19,9 +22,13 @@ class AlternativeGenerator:
         self,
         candidate_builder: CandidateBuilder | None = None,
         score_estimator: ScoreEstimator | None = None,
+        ranker: AlternativeRanker | None = None,
+        explanation_builder: ExplanationBuilder | None = None,
     ):
         self.candidate_builder = candidate_builder or CandidateBuilder()
         self.score_estimator = score_estimator or ScoreEstimator()
+        self.ranker = ranker or AlternativeRanker()
+        self.explanation_builder = explanation_builder or ExplanationBuilder()
 
     def generate_for_session(
         self,
@@ -37,30 +44,25 @@ class AlternativeGenerator:
             current_period=current_period,
         )
 
-        estimated = [
-            self.score_estimator.estimate(
+        alternatives = []
+        for candidate in candidates:
+            estimated = self.score_estimator.estimate(
                 candidate,
                 current_day=current_day,
                 current_period=current_period,
                 current_score=current_score,
             )
-            for candidate in candidates
-        ]
-
-        estimated.sort(key=lambda item: item.delta, reverse=True)
-
-        alternatives = []
-        for item in estimated[:limit]:
-            explanation = " ".join(item.reasons) if item.reasons else item.candidate.reason
+            explanation = self.explanation_builder.build(estimated)
             alternatives.append(
                 EditorAlternative(
-                    title=item.candidate.title,
-                    estimated_delta=item.delta,
-                    estimated_score=item.estimated_score,
-                    explanation=explanation,
-                    candidate=item.candidate,
-                    reasons=item.reasons,
+                    title=candidate.title,
+                    estimated_delta=estimated.delta,
+                    estimated_score=estimated.estimated_score,
+                    explanation=explanation.summary,
+                    candidate=candidate,
+                    reasons=estimated.reasons,
+                    bullets=explanation.bullets,
                 )
             )
 
-        return tuple(alternatives)
+        return self.ranker.rank(alternatives, limit=limit)
