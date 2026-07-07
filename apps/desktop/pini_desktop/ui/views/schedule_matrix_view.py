@@ -9,6 +9,7 @@ from PySide6.QtWidgets import (
     QPushButton,
     QSplitter,
     QTableWidgetItem,
+    QTabWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -19,6 +20,7 @@ from pini_desktop.services.schedule_view_service import ScheduleViewService
 from pini_desktop.ui.views.editor_history_panel import EditorHistoryPanel
 from pini_desktop.ui.views.editor_impact_panel import EditorImpactPanel
 from pini_desktop.ui.views.schedule_dragdrop_table import ScheduleDragDropTable
+from pini_desktop.ui.views.schedule_versions_panel import ScheduleVersionsPanel
 
 
 class ScheduleMatrixView(QWidget):
@@ -81,16 +83,16 @@ class ScheduleMatrixView(QWidget):
 
         self.impact_panel = EditorImpactPanel()
         self.history_panel = EditorHistoryPanel()
+        self.versions_panel = ScheduleVersionsPanel()
 
-        right_panel = QSplitter(Qt.Vertical)
-        right_panel.addWidget(self.impact_panel)
-        right_panel.addWidget(self.history_panel)
-        right_panel.setStretchFactor(0, 1)
-        right_panel.setStretchFactor(1, 1)
+        side_tabs = QTabWidget()
+        side_tabs.addTab(self.impact_panel, "Impacto")
+        side_tabs.addTab(self.history_panel, "Historial")
+        side_tabs.addTab(self.versions_panel, "Versiones")
 
         splitter = QSplitter()
         splitter.addWidget(self.table)
-        splitter.addWidget(right_panel)
+        splitter.addWidget(side_tabs)
         splitter.setStretchFactor(0, 4)
         splitter.setStretchFactor(1, 1)
 
