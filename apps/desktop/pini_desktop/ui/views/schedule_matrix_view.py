@@ -6,7 +6,6 @@ from PySide6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
-    QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
@@ -14,6 +13,7 @@ from PySide6.QtWidgets import (
 
 from pini_desktop.services.editor.editor_service import EditorService
 from pini_desktop.services.schedule_view_service import ScheduleViewService
+from pini_desktop.ui.views.schedule_dragdrop_table import ScheduleDragDropTable
 
 
 class ScheduleMatrixView(QWidget):
@@ -44,7 +44,7 @@ class ScheduleMatrixView(QWidget):
         redo_button = QPushButton("Rehacer")
         redo_button.clicked.connect(self.redo_last_action)
 
-        self.status_label = QLabel("Editor: selecciona una sesión con botón derecho.")
+        self.status_label = QLabel("Editor: arrastra una sesión o usa botón derecho.")
         self.status_label.setWordWrap(True)
 
         top = QHBoxLayout()
@@ -55,14 +55,16 @@ class ScheduleMatrixView(QWidget):
         top.addWidget(undo_button)
         top.addWidget(redo_button)
 
-        self.table = QTableWidget()
+        self.table = ScheduleDragDropTable()
         self.table.setRowCount(6)
         self.table.setColumnCount(5)
         self.table.setHorizontalHeaderLabels(self.DAY_NAMES)
         self.table.setVerticalHeaderLabels([f"P{i}" for i in range(1, 7)])
-        self.table.setEditTriggers(QTableWidget.NoEditTriggers)
+        self.table.setEditTriggers(ScheduleDragDropTable.NoEditTriggers)
         self.table.setContextMenuPolicy(Qt.CustomContextMenu)
         self.table.customContextMenuRequested.connect(self.open_context_menu)
+        self.table.sessionMoved.connect(self.move_session_by_drag)
+        self.table.sessionsSwapped.connect(self.swap_sessions_by_drag)
 
         layout = QVBoxLayout(self)
         layout.addLayout(top)
@@ -76,10 +78,7 @@ class ScheduleMatrixView(QWidget):
         self.selector.blockSignals(True)
         self.selector.clear()
 
-        if self.mode == "course":
-            items = self.service.list_courses()
-        else:
-            items = self.service.list_teachers()
+        items = self.service.list_courses() if self.mode == "course" else self.service.list_teachers()
 
         for entity_id, label in items:
             self.selector.addItem(label, entity_id)
@@ -104,10 +103,7 @@ class ScheduleMatrixView(QWidget):
         if entity_id is None:
             return
 
-        if self.mode == "course":
-            matrix = self.service.course_matrix(entity_id)
-        else:
-            matrix = self.service.teacher_matrix(entity_id)
+        matrix = self.service.course_matrix(entity_id) if self.mode == "course" else self.service.teacher_matrix(entity_id)
 
         for day in range(1, 6):
             for period in range(1, 7):
@@ -115,10 +111,11 @@ class ScheduleMatrixView(QWidget):
                 if cell is None:
                     continue
 
-                if self.mode == "course":
-                    text = f"{cell.subject_name}\n{cell.teacher_name}\n{cell.room_name}".strip()
-                else:
-                    text = f"{cell.course_code}\n{cell.subject_name}\n{cell.room_name}".strip()
+                text = (
+                    f"{cell.subject_name}\n{cell.teacher_name}\n{cell.room_name}".strip()
+                    if self.mode == "course"
+                    else f"{cell.course_code}\n{cell.subject_name}\n{cell.room_name}".strip()
+                )
 
                 item = QTableWidgetItem(text)
                 item.setTextAlignment(Qt.AlignCenter)
@@ -176,10 +173,21 @@ class ScheduleMatrixView(QWidget):
         self.marked_session_label = ""
         self.status_label.setText("Editor: selección cancelada.")
 
+    def move_session_by_drag(self, session_id: int, day: int, period: int) -> None:
+        result = self.editor_service.move_session(session_id, day, period)
+        self._show_result(result)
+        if result.success:
+            self.load_matrix()
+
+    def swap_sessions_by_drag(self, first_session_id: int, second_session_id: int) -> None:
+        result = self.editor_service.swap_sessions(first_session_id, second_session_id)
+        self._show_result(result)
+        if result.success:
+            self.load_matrix()
+
     def move_marked_session(self, day: int, period: int) -> None:
         if self.marked_session_id is None:
             return
-
         result = self.editor_service.move_session(self.marked_session_id, day, period)
         self._show_result(result)
         if result.success:
@@ -189,7 +197,6 @@ class ScheduleMatrixView(QWidget):
     def swap_marked_session(self, other_session_id: int) -> None:
         if self.marked_session_id is None:
             return
-
         result = self.editor_service.swap_sessions(self.marked_session_id, int(other_session_id))
         self._show_result(result)
         if result.success:
