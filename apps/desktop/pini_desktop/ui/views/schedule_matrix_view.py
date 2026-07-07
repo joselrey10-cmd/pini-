@@ -86,6 +86,7 @@ class ScheduleMatrixView(QWidget):
         self.history_panel = EditorHistoryPanel()
         self.versions_panel = ScheduleVersionsPanel()
         self.local_optimization_panel = LocalOptimizationPanel()
+        self.local_optimization_panel.suggestionApplied.connect(self.apply_suggestion_result)
 
         side_tabs = QTabWidget()
         side_tabs.addTab(self.impact_panel, "Impacto")
@@ -266,6 +267,11 @@ class ScheduleMatrixView(QWidget):
         self._show_result(result, "Intercambiar sesión marcada")
         if result.success:
             self.clear_marked_session()
+            self.load_matrix()
+
+    def apply_suggestion_result(self, result) -> None:
+        self._show_result(result, "Aplicar sugerencia")
+        if result.success:
             self.load_matrix()
 
     def undo_last_action(self) -> None:
