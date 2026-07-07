@@ -4,15 +4,10 @@ from PySide6.QtWidgets import QAbstractItemView, QTableWidget
 
 
 class ScheduleDragDropTable(QTableWidget):
-    """Tabla de horario con Drag & Drop interno.
-
-    Emite:
-    - sessionMoved(session_id, target_day, target_period)
-    - sessionsSwapped(source_session_id, target_session_id)
-    """
-
     sessionMoved = Signal(int, int, int)
     sessionsSwapped = Signal(int, int)
+    dragPreviewRequested = Signal(int, int, int)
+    dragPreviewCleared = Signal()
 
     SESSION_ID_ROLE = Qt.UserRole
     DAY_ROLE = Qt.UserRole + 1
@@ -32,7 +27,6 @@ class ScheduleDragDropTable(QTableWidget):
         item = self.currentItem()
         if item is None:
             return
-
         session_id = item.data(self.SESSION_ID_ROLE)
         if session_id is None:
             return
@@ -43,6 +37,7 @@ class ScheduleDragDropTable(QTableWidget):
         drag = QDrag(self)
         drag.setMimeData(mime)
         drag.exec(Qt.MoveAction)
+        self.dragPreviewCleared.emit()
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasFormat(self.MIME_TYPE):
@@ -52,9 +47,20 @@ class ScheduleDragDropTable(QTableWidget):
 
     def dragMoveEvent(self, event):
         if event.mimeData().hasFormat(self.MIME_TYPE):
+            item = self.itemAt(event.position().toPoint())
+            if item is not None:
+                source_session_id = int(bytes(event.mimeData().data(self.MIME_TYPE)).decode("utf-8"))
+                day = item.data(self.DAY_ROLE)
+                period = item.data(self.PERIOD_ROLE)
+                if day is not None and period is not None:
+                    self.dragPreviewRequested.emit(source_session_id, int(day), int(period))
             event.acceptProposedAction()
         else:
             super().dragMoveEvent(event)
+
+    def dragLeaveEvent(self, event):
+        self.dragPreviewCleared.emit()
+        super().dragLeaveEvent(event)
 
     def dropEvent(self, event):
         if not event.mimeData().hasFormat(self.MIME_TYPE):
@@ -76,4 +82,5 @@ class ScheduleDragDropTable(QTableWidget):
         elif int(target_session_id) != source_session_id:
             self.sessionsSwapped.emit(source_session_id, int(target_session_id))
 
+        self.dragPreviewCleared.emit()
         event.acceptProposedAction()

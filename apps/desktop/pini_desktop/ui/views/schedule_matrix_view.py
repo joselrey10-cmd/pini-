@@ -1,4 +1,5 @@
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import (
 )
 
 from pini_desktop.services.editor.editor_service import EditorService
+from pini_desktop.services.editor.validation.live_validation import LiveMoveValidator
 from pini_desktop.services.schedule_view_service import ScheduleViewService
 from pini_desktop.ui.views.schedule_dragdrop_table import ScheduleDragDropTable
 
@@ -22,6 +24,11 @@ class ScheduleMatrixView(QWidget):
     DAY_ROLE = Qt.UserRole + 1
     PERIOD_ROLE = Qt.UserRole + 2
 
+    COLOR_DEFAULT = QColor(255, 255, 255)
+    COLOR_VALID = QColor(210, 245, 220)
+    COLOR_SWAP = QColor(255, 240, 190)
+    COLOR_SAME = QColor(230, 230, 230)
+
     def __init__(self, mode: str, parent=None):
         super().__init__(parent)
         if mode not in {"course", "teacher"}:
@@ -29,6 +36,7 @@ class ScheduleMatrixView(QWidget):
         self.mode = mode
         self.service = ScheduleViewService()
         self.editor_service = EditorService()
+        self.live_validator = LiveMoveValidator()
         self.marked_session_id: int | None = None
         self.marked_session_label = ""
 
@@ -65,6 +73,8 @@ class ScheduleMatrixView(QWidget):
         self.table.customContextMenuRequested.connect(self.open_context_menu)
         self.table.sessionMoved.connect(self.move_session_by_drag)
         self.table.sessionsSwapped.connect(self.swap_sessions_by_drag)
+        self.table.dragPreviewRequested.connect(self.preview_drag_target)
+        self.table.dragPreviewCleared.connect(self.clear_live_preview)
 
         layout = QVBoxLayout(self)
         layout.addLayout(top)
@@ -79,7 +89,6 @@ class ScheduleMatrixView(QWidget):
         self.selector.clear()
 
         items = self.service.list_courses() if self.mode == "course" else self.service.list_teachers()
-
         for entity_id, label in items:
             self.selector.addItem(label, entity_id)
 
@@ -119,6 +128,7 @@ class ScheduleMatrixView(QWidget):
 
                 item = QTableWidgetItem(text)
                 item.setTextAlignment(Qt.AlignCenter)
+                item.setBackground(self.COLOR_DEFAULT)
                 item.setData(self.SESSION_ID_ROLE, cell.id)
                 item.setData(self.DAY_ROLE, day)
                 item.setData(self.PERIOD_ROLE, period)
@@ -130,10 +140,40 @@ class ScheduleMatrixView(QWidget):
     def _set_empty_cell(self, day: int, period: int) -> None:
         item = QTableWidgetItem("")
         item.setTextAlignment(Qt.AlignCenter)
+        item.setBackground(self.COLOR_DEFAULT)
         item.setData(self.SESSION_ID_ROLE, None)
         item.setData(self.DAY_ROLE, day)
         item.setData(self.PERIOD_ROLE, period)
         self.table.setItem(period - 1, day - 1, item)
+
+    def preview_drag_target(self, source_session_id: int, day: int, period: int) -> None:
+        self.clear_live_preview()
+        item = self.table.item(period - 1, day - 1)
+        if item is None:
+            return
+
+        validation = self.live_validator.validate_cell(
+            source_session_id=source_session_id,
+            target_session_id=item.data(self.SESSION_ID_ROLE),
+            day=day,
+            period=period,
+        )
+
+        if validation.status == "valid":
+            item.setBackground(self.COLOR_VALID)
+        elif validation.status == "swap":
+            item.setBackground(self.COLOR_SWAP)
+        elif validation.status == "same":
+            item.setBackground(self.COLOR_SAME)
+
+        self.status_label.setText(validation.message)
+
+    def clear_live_preview(self) -> None:
+        for row in range(self.table.rowCount()):
+            for column in range(self.table.columnCount()):
+                item = self.table.item(row, column)
+                if item is not None:
+                    item.setBackground(self.COLOR_DEFAULT)
 
     def open_context_menu(self, position) -> None:
         item = self.table.itemAt(position)
