@@ -19,6 +19,7 @@ from pini_desktop.services.editor.validation.live_validation import LiveMoveVali
 from pini_desktop.services.schedule_view_service import ScheduleViewService
 from pini_desktop.ui.views.editor_history_panel import EditorHistoryPanel
 from pini_desktop.ui.views.editor_impact_panel import EditorImpactPanel
+from pini_desktop.ui.views.local_optimization_panel import LocalOptimizationPanel
 from pini_desktop.ui.views.schedule_dragdrop_table import ScheduleDragDropTable
 from pini_desktop.ui.views.schedule_versions_panel import ScheduleVersionsPanel
 
@@ -84,9 +85,11 @@ class ScheduleMatrixView(QWidget):
         self.impact_panel = EditorImpactPanel()
         self.history_panel = EditorHistoryPanel()
         self.versions_panel = ScheduleVersionsPanel()
+        self.local_optimization_panel = LocalOptimizationPanel()
 
         side_tabs = QTabWidget()
         side_tabs.addTab(self.impact_panel, "Impacto")
+        side_tabs.addTab(self.local_optimization_panel, "Mejoras")
         side_tabs.addTab(self.history_panel, "Historial")
         side_tabs.addTab(self.versions_panel, "Versiones")
 
@@ -279,6 +282,7 @@ class ScheduleMatrixView(QWidget):
 
     def _show_result(self, result, action: str = "Acción") -> None:
         self.impact_panel.show_result(result)
+        self.local_optimization_panel.analyse_result(result)
         self.history_panel.add_result(action, result)
 
         details = []
