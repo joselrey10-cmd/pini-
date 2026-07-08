@@ -4,6 +4,8 @@ from PySide6.QtWidgets import QLabel, QListWidget, QPushButton, QTextEdit, QVBox
 from pini_desktop.services.editor.optimization.alternative_apply_service import AlternativeApplyService
 from pini_desktop.services.editor.optimization.alternative_comparator import AlternativeComparator
 from pini_desktop.services.editor.optimization.alternative_generator import AlternativeGenerator
+from pini_desktop.services.editor.optimization.alternative_preview import AlternativePreviewService
+from pini_desktop.ui.views.alternative_preview_dialog import AlternativePreviewDialog
 
 
 class AlternativesPanel(QWidget):
@@ -13,6 +15,7 @@ class AlternativesPanel(QWidget):
         super().__init__(parent)
         self.generator = AlternativeGenerator()
         self.comparator = AlternativeComparator()
+        self.preview_service = AlternativePreviewService()
         self.apply_service = AlternativeApplyService()
         self.current_alternatives = []
         self.current_comparison = None
@@ -29,6 +32,9 @@ class AlternativesPanel(QWidget):
 
         self.list_widget = QListWidget()
 
+        preview_button = QPushButton("Previsualizar alternativa")
+        preview_button.clicked.connect(self.preview_selected)
+
         apply_button = QPushButton("Aplicar alternativa seleccionada")
         apply_button.clicked.connect(self.apply_selected)
 
@@ -40,6 +46,7 @@ class AlternativesPanel(QWidget):
         layout.addWidget(self.summary_label)
         layout.addWidget(self.recommendation_box)
         layout.addWidget(self.list_widget)
+        layout.addWidget(preview_button)
         layout.addWidget(apply_button)
         layout.addWidget(clear_button)
 
@@ -63,10 +70,7 @@ class AlternativesPanel(QWidget):
         self.summary_label.setText(f"Alternativas encontradas: {len(self.current_alternatives)}")
         self._show_best_recommendation()
 
-        comparison_by_title = {
-            item.alternative.title: item
-            for item in self.current_comparison.items
-        }
+        comparison_by_title = {item.alternative.title: item for item in self.current_comparison.items}
 
         for alternative in self.current_alternatives:
             comparison_item = comparison_by_title.get(alternative.title)
@@ -105,13 +109,31 @@ class AlternativesPanel(QWidget):
 
         self.recommendation_box.setPlainText("\n".join(text))
 
-    def apply_selected(self):
+    def selected_alternative(self):
         row = self.list_widget.currentRow()
         if row < 0 or row >= len(self.current_alternatives):
             self.summary_label.setText("Selecciona una alternativa.")
+            return None
+        return self.current_alternatives[row]
+
+    def preview_selected(self):
+        alternative = self.selected_alternative()
+        if alternative is None:
+            return
+        dialog = AlternativePreviewDialog(self.preview_service.build_text(alternative), self)
+        dialog.exec()
+
+    def apply_selected(self):
+        alternative = self.selected_alternative()
+        if alternative is None:
             return
 
-        result = self.apply_service.apply(self.current_alternatives[row])
+        dialog = AlternativePreviewDialog(self.preview_service.build_text(alternative), self)
+        if dialog.exec() != dialog.Accepted:
+            self.summary_label.setText("Aplicación cancelada.")
+            return
+
+        result = self.apply_service.apply(alternative)
         self.summary_label.setText(result.message)
 
         if result.editor_result is not None:
