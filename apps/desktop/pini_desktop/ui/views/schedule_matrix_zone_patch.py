@@ -1,10 +1,3 @@
-"""Ayudante de integración para ScheduleMatrixView.
-
-Este módulo permite añadir los paneles de optimización por zonas sin duplicar
-la lógica de los paneles. Si la vista principal ya tiene `side_tabs`, basta con
-llamar a `install_zone_optimizer_tabs(view)`.
-"""
-
 from pini_desktop.ui.views.zone_optimizer_tabs import ZoneOptimizerTabs
 
 
@@ -13,19 +6,17 @@ def install_zone_optimizer_tabs(view) -> ZoneOptimizerTabs:
     view.zone_optimizer_tabs = tabs
 
     if hasattr(view, "side_tabs"):
-        view.side_tabs.addTab(tabs, "Optimización por zonas")
+        view.side_tabs.addTab(tabs, "Optimización avanzada")
 
-    if hasattr(tabs.zone_iterative_panel, "planApplied"):
-        tabs.zone_iterative_panel.planApplied.connect(lambda result: _on_zone_plan_applied(view, result))
+    tabs.connect_plan_applied(lambda result: _on_optimizer_applied(view, result))
 
     return tabs
 
 
-def _on_zone_plan_applied(view, result) -> None:
-    text = (
-        f"Plan de zona aplicado. Correctas: {getattr(result, 'applied', 0)}. "
-        f"Fallidas: {getattr(result, 'failed', 0)}."
-    )
+def _on_optimizer_applied(view, result) -> None:
+    applied = getattr(result, "applied", 0)
+    failed = getattr(result, "failed", 0)
+    text = f"Optimización aplicada. Correctas: {applied}. Fallidas: {failed}."
 
     if hasattr(view, "status_label"):
         view.status_label.setText(text)

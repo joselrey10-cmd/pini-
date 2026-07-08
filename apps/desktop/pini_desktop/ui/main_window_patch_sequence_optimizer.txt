@@ -1,0 +1,21 @@
+Integración recomendada en schedule_matrix_view.py:
+
+1) Importar:
+
+from pini_desktop.ui.views.schedule_matrix_zone_patch import install_zone_optimizer_tabs
+
+2) Después de crear `self.side_tabs`:
+
+install_zone_optimizer_tabs(self)
+
+3) Si ya habías instalado `ZoneOptimizerTabs` en el sprint 35.2.5.4, este sprint lo sustituye y añade una pestaña nueva:
+
+- Zona
+- Zona avanzada
+- Cadenas IA
+
+4) Si quieres un botón superior:
+
+sequence_button = QPushButton("Cadenas IA")
+sequence_button.clicked.connect(lambda: self.side_tabs.setCurrentWidget(self.zone_optimizer_tabs))
+top.addWidget(sequence_button)
