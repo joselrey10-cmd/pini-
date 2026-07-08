@@ -5,6 +5,8 @@ from pini_desktop.services.editor.optimization.sequence_apply_service import Seq
 from pini_desktop.services.editor.optimization.sequence_optimizer import SequenceOptimizer
 from pini_desktop.services.editor.optimization.zone_definition import ZoneDefinition
 from pini_desktop.ui.views.sequence_preview_dialog import SequencePreviewDialog
+from pini_desktop.ui.views.sequence_report_dialog import SequenceReportDialog
+
 
 class SequenceOptimizerPanel(QWidget):
     sequenceApplied = Signal(object)
@@ -50,6 +52,8 @@ class SequenceOptimizerPanel(QWidget):
         search_button.clicked.connect(self.search_sequences)
         preview_button = QPushButton("Previsualizar cadena")
         preview_button.clicked.connect(self.preview_selected)
+        report_button = QPushButton("Ver informe IA")
+        report_button.clicked.connect(self.report_selected)
         apply_button = QPushButton("Aplicar cadena seleccionada")
         apply_button.clicked.connect(self.apply_selected)
 
@@ -62,6 +66,7 @@ class SequenceOptimizerPanel(QWidget):
         layout.addLayout(form)
         layout.addWidget(search_button)
         layout.addWidget(preview_button)
+        layout.addWidget(report_button)
         layout.addWidget(apply_button)
         layout.addWidget(self.summary)
         layout.addWidget(self.list_widget)
@@ -110,6 +115,11 @@ class SequenceOptimizerPanel(QWidget):
         item = self.selected_sequence()
         if item is not None:
             SequencePreviewDialog(item, self).exec()
+
+    def report_selected(self):
+        item = self.selected_sequence()
+        if item is not None:
+            SequenceReportDialog(item, self).exec()
 
     def apply_selected(self):
         item = self.selected_sequence()
