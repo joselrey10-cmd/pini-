@@ -1,9 +1,11 @@
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QComboBox, QFormLayout, QLabel, QListWidget, QMessageBox, QPushButton, QSpinBox, QVBoxLayout, QWidget
 
+from pini_desktop.services.editor.optimization.predictive_sequence_evaluator import PredictiveSequenceEvaluator
 from pini_desktop.services.editor.optimization.sequence_apply_service import SequenceApplyService
 from pini_desktop.services.editor.optimization.sequence_optimizer import SequenceOptimizer
 from pini_desktop.services.editor.optimization.zone_definition import ZoneDefinition
+from pini_desktop.ui.views.predictive_simulation_dialog import PredictiveSimulationDialog
 from pini_desktop.ui.views.sequence_preview_dialog import SequencePreviewDialog
 from pini_desktop.ui.views.sequence_report_dialog import SequenceReportDialog
 
@@ -14,8 +16,10 @@ class SequenceOptimizerPanel(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.optimizer = SequenceOptimizer()
+        self.predictive_evaluator = PredictiveSequenceEvaluator()
         self.apply_service = SequenceApplyService()
         self.current_sequences = []
+        self.current_predictive_scores = []
 
         title = QLabel("Cadenas inteligentes")
         title.setStyleSheet("font-size: 16px; font-weight: bold;")
@@ -50,6 +54,8 @@ class SequenceOptimizerPanel(QWidget):
 
         search_button = QPushButton("Buscar cadenas")
         search_button.clicked.connect(self.search_sequences)
+        predictive_button = QPushButton("Simular impacto futuro")
+        predictive_button.clicked.connect(self.predict_selected)
         preview_button = QPushButton("Previsualizar cadena")
         preview_button.clicked.connect(self.preview_selected)
         report_button = QPushButton("Ver informe IA")
@@ -65,6 +71,7 @@ class SequenceOptimizerPanel(QWidget):
         layout.addWidget(title)
         layout.addLayout(form)
         layout.addWidget(search_button)
+        layout.addWidget(predictive_button)
         layout.addWidget(preview_button)
         layout.addWidget(report_button)
         layout.addWidget(apply_button)
@@ -86,6 +93,8 @@ class SequenceOptimizerPanel(QWidget):
         zone = self.build_zone()
         result = self.optimizer.optimize(zone, max_depth=self.depth.value(), limit=5)
         self.current_sequences = list(result.sequences)
+        self.current_predictive_scores = [self.predictive_evaluator.evaluate(item) for item in self.current_sequences]
+
         self.list_widget.clear()
         if not result.has_sequences:
             self.summary.setText("No se han encontrado cadenas de mejora.")
@@ -94,14 +103,16 @@ class SequenceOptimizerPanel(QWidget):
         best = result.best
         self.summary.setText(
             f"Cadenas encontradas: {len(self.current_sequences)} · "
-            f"Mejor score: {best.score if best else 0} · "
+            f"Mejor score inmediato: {best.score if best else 0} · "
             f"Mejora: +{best.sequence.estimated_delta if best else 0}"
         )
         for index, item in enumerate(self.current_sequences, start=1):
+            predictive = self.current_predictive_scores[index - 1]
             self.list_widget.addItem(
                 f"#{index} · {item.recommendation} · score {item.score} · "
-                f"riesgo {item.risk} · pasos {item.sequence.length} · "
-                f"delta +{item.sequence.estimated_delta}"
+                f"predictivo {predictive.predictive_score} · "
+                f"delta final {predictive.simulation.impact.final_delta} · "
+                f"riesgos {len(predictive.simulation.impact.risks)}"
             )
 
     def selected_sequence(self):
@@ -110,6 +121,18 @@ class SequenceOptimizerPanel(QWidget):
             QMessageBox.information(self, "Cadena", "Selecciona una cadena.")
             return None
         return self.current_sequences[row]
+
+    def selected_predictive(self):
+        row = self.list_widget.currentRow()
+        if row < 0 or row >= len(self.current_predictive_scores):
+            QMessageBox.information(self, "Simulación", "Selecciona una cadena.")
+            return None
+        return self.current_predictive_scores[row]
+
+    def predict_selected(self):
+        predictive = self.selected_predictive()
+        if predictive is not None:
+            PredictiveSimulationDialog(predictive, self).exec()
 
     def preview_selected(self):
         item = self.selected_sequence()
@@ -125,6 +148,11 @@ class SequenceOptimizerPanel(QWidget):
         item = self.selected_sequence()
         if item is None:
             return
+        predictive = self.selected_predictive()
+        if predictive is not None and predictive.predictive_score <= 0:
+            QMessageBox.warning(self, "Cadena no recomendada", "La simulación predictiva no recomienda aplicar esta cadena.")
+            return
+
         dialog = SequencePreviewDialog(item, self)
         if dialog.exec() != dialog.Accepted:
             self.summary.setText("Aplicación cancelada.")
