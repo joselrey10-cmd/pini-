@@ -1,0 +1,20 @@
+Integración recomendada en schedule_matrix_view.py:
+
+1) Añadir import:
+
+from pini_desktop.ui.views.schedule_matrix_zone_patch import install_zone_optimizer_tabs
+
+2) Después de crear self.side_tabs y añadir las pestañas existentes:
+
+install_zone_optimizer_tabs(self)
+
+3) Opcional: añadir botón superior:
+
+zone_button = QPushButton("Optimizar zona")
+zone_button.clicked.connect(lambda: self.side_tabs.setCurrentWidget(self.zone_optimizer_tabs))
+top.addWidget(zone_button)
+
+4) Opcional en menú contextual:
+
+zone_action = menu.addAction("Abrir optimización por zonas")
+zone_action.triggered.connect(lambda: self.side_tabs.setCurrentWidget(self.zone_optimizer_tabs))
