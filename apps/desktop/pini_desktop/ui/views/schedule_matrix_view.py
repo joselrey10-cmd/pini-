@@ -17,6 +17,7 @@ from PySide6.QtWidgets import (
 from pini_desktop.services.editor.editor_service import EditorService
 from pini_desktop.services.editor.validation.live_validation import LiveMoveValidator
 from pini_desktop.services.schedule_view_service import ScheduleViewService
+from pini_desktop.ui.views.alternatives_panel import AlternativesPanel
 from pini_desktop.ui.views.editor_history_panel import EditorHistoryPanel
 from pini_desktop.ui.views.editor_impact_panel import EditorImpactPanel
 from pini_desktop.ui.views.local_optimization_panel import LocalOptimizationPanel
@@ -58,6 +59,9 @@ class ScheduleMatrixView(QWidget):
         redo_button = QPushButton("Rehacer")
         redo_button.clicked.connect(self.redo_last_action)
 
+        alternatives_button = QPushButton("Generar alternativas")
+        alternatives_button.clicked.connect(self.generate_alternatives_for_selected)
+
         self.status_label = QLabel("Editor: arrastra una sesión o usa botón derecho.")
         self.status_label.setWordWrap(True)
 
@@ -68,6 +72,7 @@ class ScheduleMatrixView(QWidget):
         top.addWidget(refresh_button)
         top.addWidget(undo_button)
         top.addWidget(redo_button)
+        top.addWidget(alternatives_button)
 
         self.table = ScheduleDragDropTable()
         self.table.setRowCount(6)
@@ -87,16 +92,19 @@ class ScheduleMatrixView(QWidget):
         self.versions_panel = ScheduleVersionsPanel()
         self.local_optimization_panel = LocalOptimizationPanel()
         self.local_optimization_panel.suggestionApplied.connect(self.apply_suggestion_result)
+        self.alternatives_panel = AlternativesPanel()
+        self.alternatives_panel.alternativeApplied.connect(self.apply_alternative_result)
 
-        side_tabs = QTabWidget()
-        side_tabs.addTab(self.impact_panel, "Impacto")
-        side_tabs.addTab(self.local_optimization_panel, "Mejoras")
-        side_tabs.addTab(self.history_panel, "Historial")
-        side_tabs.addTab(self.versions_panel, "Versiones")
+        self.side_tabs = QTabWidget()
+        self.side_tabs.addTab(self.impact_panel, "Impacto")
+        self.side_tabs.addTab(self.local_optimization_panel, "Mejoras")
+        self.side_tabs.addTab(self.alternatives_panel, "Asistente IA")
+        self.side_tabs.addTab(self.history_panel, "Historial")
+        self.side_tabs.addTab(self.versions_panel, "Versiones")
 
         splitter = QSplitter()
         splitter.addWidget(self.table)
-        splitter.addWidget(side_tabs)
+        splitter.addWidget(self.side_tabs)
         splitter.setStretchFactor(0, 4)
         splitter.setStretchFactor(1, 1)
 
@@ -170,6 +178,28 @@ class ScheduleMatrixView(QWidget):
         item.setData(self.PERIOD_ROLE, period)
         self.table.setItem(period - 1, day - 1, item)
 
+    def selected_session_info(self):
+        item = self.table.currentItem()
+        if item is None:
+            return None
+        session_id = item.data(self.SESSION_ID_ROLE)
+        day = item.data(self.DAY_ROLE)
+        period = item.data(self.PERIOD_ROLE)
+        if session_id is None:
+            return None
+        return int(session_id), int(day), int(period)
+
+    def generate_alternatives_for_selected(self) -> None:
+        info = self.selected_session_info()
+        if info is None:
+            QMessageBox.information(self, "Alternativas", "Selecciona una sesión del horario.")
+            return
+
+        session_id, day, period = info
+        self.alternatives_panel.generate_for_session(session_id, day, period)
+        self.side_tabs.setCurrentWidget(self.alternatives_panel)
+        self.status_label.setText("Alternativas generadas para la sesión seleccionada.")
+
     def preview_drag_target(self, source_session_id: int, day: int, period: int) -> None:
         self.clear_live_preview()
         item = self.table.item(period - 1, day - 1)
@@ -214,6 +244,9 @@ class ScheduleMatrixView(QWidget):
             mark_action = menu.addAction("Marcar esta sesión para mover/intercambiar")
             mark_action.triggered.connect(lambda: self.mark_session(session_id, item.text()))
 
+            alternatives_action = menu.addAction("Generar alternativas para esta sesión")
+            alternatives_action.triggered.connect(lambda: self.generate_alternatives_for_cell(session_id, day, period))
+
         if self.marked_session_id is not None:
             if session_id is None:
                 move_action = menu.addAction("Mover sesión marcada aquí")
@@ -226,6 +259,11 @@ class ScheduleMatrixView(QWidget):
             clear_action.triggered.connect(self.clear_marked_session)
 
         menu.exec(self.table.viewport().mapToGlobal(position))
+
+    def generate_alternatives_for_cell(self, session_id: int, day: int, period: int) -> None:
+        self.alternatives_panel.generate_for_session(int(session_id), int(day), int(period))
+        self.side_tabs.setCurrentWidget(self.alternatives_panel)
+        self.status_label.setText("Alternativas generadas.")
 
     def mark_session(self, session_id: int, label: str) -> None:
         self.marked_session_id = int(session_id)
@@ -271,6 +309,11 @@ class ScheduleMatrixView(QWidget):
 
     def apply_suggestion_result(self, result) -> None:
         self._show_result(result, "Aplicar sugerencia")
+        if result.success:
+            self.load_matrix()
+
+    def apply_alternative_result(self, result) -> None:
+        self._show_result(result, "Aplicar alternativa IA")
         if result.success:
             self.load_matrix()
 
