@@ -5,6 +5,7 @@ from pini_desktop.services.editor.optimization.predictive_sequence_evaluator imp
 from pini_desktop.services.editor.optimization.sequence_apply_service import SequenceApplyService
 from pini_desktop.services.editor.optimization.sequence_optimizer import SequenceOptimizer
 from pini_desktop.services.editor.optimization.zone_definition import ZoneDefinition
+from pini_desktop.ui.views.predictive_dashboard_dialog import PredictiveDashboardDialog
 from pini_desktop.ui.views.predictive_simulation_dialog import PredictiveSimulationDialog
 from pini_desktop.ui.views.sequence_preview_dialog import SequencePreviewDialog
 from pini_desktop.ui.views.sequence_report_dialog import SequenceReportDialog
@@ -54,6 +55,8 @@ class SequenceOptimizerPanel(QWidget):
 
         search_button = QPushButton("Buscar cadenas")
         search_button.clicked.connect(self.search_sequences)
+        dashboard_button = QPushButton("Resumen predictivo")
+        dashboard_button.clicked.connect(self.show_predictive_dashboard)
         predictive_button = QPushButton("Simular impacto futuro")
         predictive_button.clicked.connect(self.predict_selected)
         preview_button = QPushButton("Previsualizar cadena")
@@ -71,6 +74,7 @@ class SequenceOptimizerPanel(QWidget):
         layout.addWidget(title)
         layout.addLayout(form)
         layout.addWidget(search_button)
+        layout.addWidget(dashboard_button)
         layout.addWidget(predictive_button)
         layout.addWidget(preview_button)
         layout.addWidget(report_button)
@@ -100,11 +104,10 @@ class SequenceOptimizerPanel(QWidget):
             self.summary.setText("No se han encontrado cadenas de mejora.")
             return
 
-        best = result.best
+        best_predictive = max(self.current_predictive_scores, key=lambda item: item.predictive_score, default=None)
         self.summary.setText(
             f"Cadenas encontradas: {len(self.current_sequences)} · "
-            f"Mejor score inmediato: {best.score if best else 0} · "
-            f"Mejora: +{best.sequence.estimated_delta if best else 0}"
+            f"Mejor predictivo: {best_predictive.predictive_score if best_predictive else 0}"
         )
         for index, item in enumerate(self.current_sequences, start=1):
             predictive = self.current_predictive_scores[index - 1]
@@ -128,6 +131,12 @@ class SequenceOptimizerPanel(QWidget):
             QMessageBox.information(self, "Simulación", "Selecciona una cadena.")
             return None
         return self.current_predictive_scores[row]
+
+    def show_predictive_dashboard(self):
+        if not self.current_predictive_scores:
+            QMessageBox.information(self, "Resumen predictivo", "Primero busca cadenas.")
+            return
+        PredictiveDashboardDialog(self.current_predictive_scores, self).exec()
 
     def predict_selected(self):
         predictive = self.selected_predictive()
