@@ -1,29 +1,28 @@
+from __future__ import annotations
+
 from dataclasses import dataclass
 
-from pini_desktop.services.editor.editor_service import EditorService
-from pini_desktop.services.editor.optimization.alternative_generator import EditorAlternative
 
-
-@dataclass(frozen=True)
-class AlternativeApplyResult:
-    success: bool
-    message: str
-    editor_result: object | None = None
+@dataclass(slots=True)
+class ApplyResult:
+    applied: bool
+    reason: str = ""
 
 
 class AlternativeApplyService:
-    def __init__(self, editor_service: EditorService | None = None):
-        self.editor_service = editor_service or EditorService()
+    def apply(self, alternative) -> ApplyResult:
+        estimated = getattr(alternative, "estimated_score", None)
 
-    def apply(self, alternative: EditorAlternative) -> AlternativeApplyResult:
-        candidate = alternative.candidate
-        result = self.editor_service.move_session(
-            int(candidate.session_id),
-            int(candidate.day),
-            int(candidate.period),
+        if estimated is None:
+            return ApplyResult(False, "La alternativa no tiene puntuación.")
+
+        candidate = estimated.candidate
+        schedule = candidate.schedule
+
+        schedule.move_session(
+            candidate.session_id,
+            candidate.target_day,
+            candidate.target_period,
         )
-        return AlternativeApplyResult(
-            success=result.success,
-            message="Alternativa aplicada." if result.success else "No se ha podido aplicar la alternativa.",
-            editor_result=result,
-        )
+
+        return ApplyResult(True)

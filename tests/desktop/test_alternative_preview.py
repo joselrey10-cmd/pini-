@@ -1,26 +1,35 @@
-from pini_desktop.services.editor.optimization.alternative_generator import EditorAlternative
-from pini_desktop.services.editor.optimization.alternative_preview import AlternativePreviewService
-from pini_desktop.services.editor.optimization.candidate_builder import MoveCandidate
+from PySide6.QtWidgets import QApplication
+
+from pini_desktop.ui.editor.alternative_preview import AlternativePreviewDialog
 
 
-def test_alternative_preview_builds_text():
-    alternative = EditorAlternative(
-        title="Mover a martes",
-        estimated_delta=1.5,
-        estimated_score=82,
-        explanation="Alternativa válida.",
-        candidate=MoveCandidate(1, 2, 3, "Mover a martes"),
-        bullets=("✔ Mejora el reparto.",),
-    )
-
-    text = AlternativePreviewService().build_text(alternative)
-
-    assert "Destino" in text
-    assert "Mejora estimada" in text
-    assert "Motivos" in text
+app = QApplication.instance()
+if app is None:
+    app = QApplication([])
 
 
-def test_alternative_preview_dialog_import():
-    from pini_desktop.ui.views.alternative_preview_dialog import AlternativePreviewDialog
+class FakeCandidate:
+    session_id = 1
+    target_day = 2
+    target_period = 3
 
-    assert AlternativePreviewDialog is not None
+
+class FakeEstimatedScore:
+    delta = 2.5
+    candidate = FakeCandidate()
+
+
+class FakeExplanation:
+    summary = "Alternativa recomendable"
+    bullets = ("✔ Mejora el reparto",)
+
+
+class FakeAlternative:
+    estimated_score = FakeEstimatedScore()
+    explanation = FakeExplanation()
+
+
+def test_alternative_preview_can_be_created():
+    dialog = AlternativePreviewDialog(FakeAlternative())
+
+    assert dialog.windowTitle() == "Vista previa de alternativa"

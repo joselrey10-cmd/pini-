@@ -1,33 +1,38 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
 from datetime import datetime
 from uuid import uuid4
 
-from .global_metrics import GlobalMetrics, GlobalMetricsCalculator
-from .virtual_schedule import VirtualSchedule, VirtualSession
+from pini_desktop.services.editor.optimization.simulation.global_metrics import (
+    GlobalMetrics,
+    GlobalMetricsCalculator,
+)
 
 
 @dataclass(frozen=True)
 class SimulationSnapshot:
     id: str
+    label: str
     created_at: str
-    sessions: tuple[VirtualSession, ...]
     metrics: GlobalMetrics
-    label: str = ""
+    session_ids: tuple[int, ...]
 
     @classmethod
-    def capture(
-        cls,
-        schedule: VirtualSchedule,
-        label: str = "",
-        calculator: GlobalMetricsCalculator | None = None,
-    ) -> "SimulationSnapshot":
-        calculator = calculator or GlobalMetricsCalculator()
+    def create(cls, virtual_schedule, label: str = ""):
+        return cls.from_virtual_schedule(virtual_schedule, label=label)
+
+    @classmethod
+    def capture(cls, virtual_schedule, label: str = ""):
+        return cls.from_virtual_schedule(virtual_schedule, label=label)
+
+    @classmethod
+    def from_virtual_schedule(cls, virtual_schedule, label: str = ""):
+        sessions = tuple(virtual_schedule.sessions())
+        metrics = GlobalMetricsCalculator().calculate(virtual_schedule)
+
         return cls(
             id=str(uuid4()),
+            label=label or "snapshot",
             created_at=datetime.now().isoformat(timespec="seconds"),
-            sessions=schedule.sessions(),
-            metrics=calculator.calculate(schedule),
-            label=label,
+            metrics=metrics,
+            session_ids=tuple(session.id for session in sessions),
         )

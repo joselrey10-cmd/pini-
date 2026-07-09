@@ -1,19 +1,30 @@
-from dataclasses import dataclass
-
-
-@dataclass(frozen=True)
-class RankedAlternative:
-    day: int
-    period: int
-    score: float
-    reasons: tuple[str, ...] = ()
+from __future__ import annotations
 
 
 class AlternativeRanker:
-    def rank(self, alternatives, limit: int = 5):
+    """
+    Ordena alternativas según su calidad estimada.
+    """
+
+    def rank(self, alternatives, limit=None):
         ranked = sorted(
             alternatives,
-            key=lambda item: getattr(item, "score", getattr(item, "delta", 0)),
+            key=lambda alternative: (
+                getattr(alternative.estimated_score, "delta", 0),
+                -getattr(alternative.estimated_score, "conflicts", 0),
+            ),
             reverse=True,
         )
-        return ranked[:limit]
+
+        if limit is not None:
+            return ranked[:limit]
+
+        return ranked
+
+    def best(self, alternatives):
+        ranked = self.rank(alternatives)
+
+        if not ranked:
+            return None
+
+        return ranked[0]

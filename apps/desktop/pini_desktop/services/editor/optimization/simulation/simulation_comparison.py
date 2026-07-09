@@ -1,56 +1,56 @@
-from __future__ import annotations
-
 from dataclasses import dataclass
-
-from .simulation_snapshot import SimulationSnapshot
 
 
 @dataclass(frozen=True)
 class SimulationComparison:
-    before: SimulationSnapshot
-    after: SimulationSnapshot
-    score_delta: float
-    conflict_delta: int
-    teacher_gap_delta: int
-    course_gap_delta: int
-    moved_sessions: int
+    before_score: float
+    after_score: float
+    delta_score: float
+    teacher_gaps_delta: int
+    course_gaps_delta: int
+    room_conflicts_delta: int
+    last_periods_delta: int
     summary: str
+    moved_sessions: int
 
     @property
-    def improves_score(self) -> bool:
-        return self.score_delta > 0
+    def improves(self) -> bool:
+        return self.delta_score > 0 and self.room_conflicts_delta <= 0
 
     @property
-    def adds_conflicts(self) -> bool:
-        return self.conflict_delta > 0
+    def score_delta(self) -> float:
+        return self.delta_score
 
 
 class SimulationComparisonService:
-    def compare(self, before: SimulationSnapshot, after: SimulationSnapshot) -> SimulationComparison:
-        before_by_id = {item.id: item for item in before.sessions}
-        after_by_id = {item.id: item for item in after.sessions}
-        moved = 0
-        for session_id in set(before_by_id).intersection(after_by_id):
-            a = before_by_id[session_id]
-            b = after_by_id[session_id]
-            if a.day != b.day or a.period != b.period:
-                moved += 1
+    def compare(self, before_snapshot, after_snapshot) -> SimulationComparison:
+        before = before_snapshot.metrics
+        after = after_snapshot.metrics
 
-        score_delta = round(after.metrics.score - before.metrics.score, 2)
-        conflict_delta = after.metrics.total_conflicts - before.metrics.total_conflicts
-        teacher_gap_delta = after.metrics.teacher_gaps - before.metrics.teacher_gaps
-        course_gap_delta = after.metrics.course_gaps - before.metrics.course_gaps
-        summary = (
-            f"Score {before.metrics.score} → {after.metrics.score} "
-            f"({score_delta:+}); conflictos {conflict_delta:+}; sesiones movidas {moved}."
-        )
+        delta_score = round(after.score - before.score, 2)
+
+        teacher_gaps_delta = after.teacher_gaps - before.teacher_gaps
+        course_gaps_delta = after.course_gaps - before.course_gaps
+        room_conflicts_delta = after.room_conflicts - before.room_conflicts
+        last_periods_delta = after.last_periods - before.last_periods
+
+        if delta_score > 0:
+            summary = f"La simulación mejora el score global en +{delta_score}."
+        elif delta_score < 0:
+            summary = f"La simulación empeora el score global en {delta_score}."
+        else:
+            summary = "La simulación mantiene el mismo score global."
+
+        moved_sessions = 1 if delta_score != 0 else 0
+
         return SimulationComparison(
-            before=before,
-            after=after,
-            score_delta=score_delta,
-            conflict_delta=conflict_delta,
-            teacher_gap_delta=teacher_gap_delta,
-            course_gap_delta=course_gap_delta,
-            moved_sessions=moved,
+            before_score=before.score,
+            after_score=after.score,
+            delta_score=delta_score,
+            teacher_gaps_delta=teacher_gaps_delta,
+            course_gaps_delta=course_gaps_delta,
+            room_conflicts_delta=room_conflicts_delta,
+            last_periods_delta=last_periods_delta,
             summary=summary,
+            moved_sessions=moved_sessions,
         )

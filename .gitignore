@@ -1,12 +1,44 @@
+# Python
 __pycache__/
 *.py[cod]
-.pytest_cache/
+*.pyo
+*.pyd
+*.egg-info/
+
+# Virtual environments
 .venv/
-*.db
-*.sqlite
+venv/
+env/
+
+# PyInstaller
 build/
 dist/
-*.egg-info/
+*.spec.bak
+
+# Pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# VS Code
 .vscode/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# Backups
+*.bak
+*.tmp
+
+# Installer output
+installer/output/
+
+# IDE
 .idea/
-.DS_Store
+
+# SQLite temp
+*.db-journal

@@ -28,14 +28,16 @@ class ExplanationBuilder:
             summary = "Alternativa delicada: puede empeorar el horario y conviene revisarla."
 
         if not bullets:
-            bullets = ["Mantiene la coherencia básica del horario."]
+            bullets = ["✔ Mantiene la coherencia básica del horario."]
 
         return AlternativeExplanation(summary=summary, bullets=tuple(bullets))
 
     def _normalize_reason(self, reason: str) -> str:
-        text = reason.strip()
+        text = str(reason).strip()
         if not text:
-            return "Mejora general del horario."
-        if text.startswith("✔") or text.startswith("•"):
+            return "✔ Mejora general del horario."
+        if text.startswith("✔"):
             return text
+        if text.startswith("✓") or text.startswith("√") or text.startswith("•"):
+            text = text[1:].strip()
         return f"✔ {text}"
